@@ -1,0 +1,8 @@
+lxml==4.4.1
+pytest==5.2.1
+pytest-arraydiff==0.3
+pytest-astropy==0.5.0
+pytest-doctestplus==0.4.0
+pytest-openfiles==0.4.0
+pytest-remotedata==0.3.2
+fire==0.2.1
