@@ -16,6 +16,7 @@ def marfs_config(pytestconfig):
     return pytestconfig.getoption("marfs_config")
 
 
+@pytest.mark.basic
 class TestNodeBase:
     def test_inputs(self, marfs_config, working_repo):
         assert marfs_config
