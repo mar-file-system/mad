@@ -7,10 +7,12 @@ def pytest_addoption(parser):
         os.path.dirname(os.path.abspath(__file__)))
     def_config = def_config + "/config/tests.xml"
     def_repo = "single"
-    # def_storage_interface = "storage_interface"
-    # def_metadata_interface = "metadata_interface"
+    def_storage_interface = "storage_interface"
+    def_metadata_interface = "metadata_interface"
 
     parser.addoption("--working_repo", action="store", default=def_repo)
     # TODO config should default to none in the future.
     # This is just laziness for testing.
     parser.addoption("--marfs_config", action="store", default=def_config)
+    parser.addoption("--si", action="store", default=def_storage_interface)
+    parser.addoption("--mi", action="store", default=def_metadata_interface)

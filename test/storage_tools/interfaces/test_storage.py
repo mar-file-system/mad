@@ -17,15 +17,31 @@ def marfs_config(pytestconfig):
     return pytestconfig.getoption("marfs_config")
 
 
+@pytest.fixture()
+def interface_type(pytestconfig):
+    return pytestconfig.getoption("si")
+
+
 @pytest.mark.basic
 class TestStorageInterface:
-    def test_create_storage_interface(self, marfs_config, working_repo):
-        i = si.StorageInterface(marfs_config, working_repo)
+    def get_interface(self, marfs_config, working_repo, interface_type):
+        interface_type = interface_type.lower().strip()
+        if interface_type == "zfs":
+            return si.ZFSInterface(marfs_config, working_repo)
+        else:
+            return si.StorageInterface(marfs_config, working_repo)
+
+    def test_create_storage_interface(
+        self, marfs_config, working_repo, interface_type
+    ):
+        i = self.get_interface(marfs_config, working_repo, interface_type)
         i.set_working_repo(working_repo)
         assert i
 
-    def test_create_pod_block_cap_scatter(self, marfs_config, working_repo):
-        i = si.StorageInterface(marfs_config, working_repo)
+    def test_create_pod_block_cap_scatter(
+        self, marfs_config, working_repo, interface_type
+    ):
+        i = self.get_interface(marfs_config, working_repo, interface_type)
         cap_paths = i.get_pod_block_caps(i.config.storage_top)
         for path in cap_paths:
             assert not os.path.isdir(path)
@@ -34,8 +50,10 @@ class TestStorageInterface:
             assert os.path.isdir(path)
             shutil.rmtree(path)
 
-    def test_load_config_data(self, marfs_config, working_repo):
-        i = si.StorageInterface(marfs_config, working_repo)
+    def test_load_config_data(
+        self, marfs_config, working_repo, interface_type
+    ):
+        i = self.get_interface(marfs_config, working_repo, interface_type)
         i.pod_num = None
         i.block_num = None
         assert i.pod_num is None
