@@ -139,7 +139,7 @@ class GPFSInterface(MetadataInterface):
 
     def deploy_namespace(self, namespace):
         link_target = self.config.mdfs_top + "/" + namespace.name
-        md_path = link_target + "/" + "mdfs"
+        md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"
         if os.path.isdir(link_target):
