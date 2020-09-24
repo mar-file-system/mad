@@ -54,3 +54,43 @@
 # LANL contributions is found at https: // github.com/jti-lanl/aws4c.
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
+
+import fire
+import sys
+import os
+from storage_tools.interfaces import storage as sti
+from storage_tools.interfaces import metadata as mdi
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def single_node_example():
+    config_file = "./config/single_node.xml"
+    repo_name = "single"
+    si = sti.StorageInterface(config_file, repo_name)
+    si._trick_valid_host()
+    si.set_working_repo(repo_name)
+    blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
+    for block in range(blocks):
+        si.block_num = int(block)
+        si.create_pod_block_cap_scatter()
+
+    mi = mdi.MetadataInterface(config_file, repo_name)
+    mi.deploy_repo(repo_name)
+    # need to link storage caps under metadata caps somehow
+
+
+def deploy_zfs(
+    marfs_config, repo_name, datastore_name="datastore", jbod_num="1"
+):
+    si = sti.ZFSInterface(marfs_config, repo_name, jbod_num)
+    si.deploy_repo(repo_name, datastore_name)
+
+
+def deploy_gpfs(marfs_config, repo_name, gpfs_device):
+    mi = mdi.GPFSInterface(marfs_config, repo_name, gpfs_device)
+    mi.deploy_repo(repo_name)
+
+
+if __name__ == '__main__':
+    fire.Fire()

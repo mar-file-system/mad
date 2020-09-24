@@ -79,8 +79,6 @@ class StorageInterface(NodeBase):
         so we get those values from the config and set them here
         """
         hostnames = [self.fqdn, self.hostname]
-        # This no longer actually checks for a valid host unless the host
-        # is a storage node
         if self.valid:
             for hostname in hostnames:
                 for host in self.config.storage_nodes:
