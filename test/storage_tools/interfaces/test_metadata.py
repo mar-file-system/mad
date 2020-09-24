@@ -15,6 +15,7 @@ def working_repo(pytestconfig):
 def marfs_config(pytestconfig):
     return pytestconfig.getoption("marfs_config")
 
+
 @pytest.fixture()
 def interface_type(pytestconfig):
     return pytestconfig.getoption("mi")
@@ -29,7 +30,9 @@ class TestMetadataInterface:
         else:
             return mi.MetadataInterface(marfs_config, working_repo)
 
-    def test_create_interface(self, marfs_config, working_repo, interface_type):
+    def test_create_interface(
+        self, marfs_config, working_repo, interface_type
+    ):
         interface = self.get_interface(
             marfs_config, working_repo, interface_type)
         interface.set_working_repo(working_repo)
@@ -41,7 +44,7 @@ class TestMetadataInterface:
         SNT = self.get_interface(marfs_config, working_repo, interface_type)
         SNT.set_working_repo(working_repo)
         assert SNT
-        #num_scatters = int(SNT.working_repo.dal.scatter_width)
+        # num_scatters = int(SNT.working_repo.dal.scatter_width)
         # pattern = SNT.working_repo.host.split("/")[-1]
         # pattern = pattern.replace("%d", "%s")
         # caps = [item[4] for item in data]

@@ -1,9 +1,9 @@
+from storage_tools.node import NodeBase
 import sys
 import os
 import pytest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from storage_tools.node import NodeBase
 
 
 @pytest.fixture()
@@ -37,7 +37,7 @@ class TestNodeBase:
         n = NodeBase(marfs_config, working_repo)
         assert n
         n = NodeBase(marfs_config, "totally_not_a_repo")
-        
+
     def test_set_working_repo(self, marfs_config, working_repo):
         n = NodeBase(marfs_config, working_repo)
         assert n
@@ -48,5 +48,5 @@ class TestNodeBase:
         n.block_num = 999
         caps_paths = n.get_pod_block_caps("/var/tmp")
         for cap in range(int(n.working_repo.dal.caps)):
-            assert f"/var/tmp/{n.working_repo.name}/pod{n.pod_num}/block{n.block_num}/cap{cap}" in caps_paths
-        
+            assert f"/var/tmp/{n.working_repo.name}/pod{n.pod_num}/" + \
+                f"block{n.block_num}/cap{cap}" in caps_paths

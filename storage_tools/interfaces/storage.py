@@ -1,54 +1,55 @@
 # Copyright(c) 2015, Los Alamos National Security, LLC
 # All rights reserved.
 
-# Copyright 2015.  Los Alamos National Security, LLC. This software was produced
-# under U.S. Government contract DE-AC52-06NA25396 for Los Alamos National
-# Laboratory(LANL), which is operated by Los Alamos National Security, LLC for
-# the U.S. Department of Energy. The U.S. Government has rights to use, reproduce,
-# and distribute this software.  NEITHER THE GOVERNMENT NOR LOS ALAMOS NATIONAL
-# SECURITY, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY
-# FOR THE USE OF THIS SOFTWARE.  If software is modified to produce derivative
-# works, such modified software should be clearly marked, so as not to confuse it
-# with the version available from LANL.
+# Copyright 2015.  Los Alamos National Security, LLC. This software was
+# produced under U.S. Government contract DE-AC52-06NA25396 for Los Alamos
+# National Laboratory(LANL), which is operated by Los Alamos National
+# Security, LLC for the U.S. Department of Energy. The U.S. Government has
+# rights to use, reproduce, and distribute this software.  NEITHER THE
+# GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+# OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If
+# software is modified to produce derivative works, such modified software
+# should be clearly marked, so as not to confuse it with the version available
+# from LANL.
 
-# Additionally, redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
+# Additionally, redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following conditions
+# are met:
 
-# 1. Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
 
 # 2. Redistributions in binary form must reproduce the above copyright notice,
 # this list of conditions and the following disclaimer in the documentation
 # and/or other materials provided with the distribution.
 
-# 3. Neither the name of Los Alamos National Security, LLC, Los Alamos National
-# Laboratory, LANL, the U.S. Government, nor the names of its contributors may be
-# used to endorse or promote products derived from this software without specific
-# prior written permission.
+# 3. Neither the name of Los Alamos National Security, LLC, Los Alamos
+# National Laboratory, LANL, the U.S. Government, nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
 
-# THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS NATIONAL SECURITY, LLC OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-# OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#                          SUBSTITUTE GOODS OR SERVICES
-#                          LOSS OF USE, DATA, OR PROFITS
-#                          OR BUSINESS
-#                          INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT
+# NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS NATIONAL
+# SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES LOSS OF USE, DATA,
+# OR PROFITS OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # -----
 # NOTE:
 # -----
 # MarFS is released under the BSD license.
 
-# MarFS was reviewed and released by LANL under Los Alamos Computer Code identifier:
-# LA-CC-15-039.
+# MarFS was reviewed and released by LANL under Los Alamos Computer Code
+# identifier: LA-CC-15-039.
 
 # MarFS uses libaws4c for Amazon S3 object communication. The original version
-# is at https: // aws.amazon.com/code/Amazon-S3/2601 and under the LGPL license.
+# is at https://aws.amazon.com/code/Amazon-S3/2601 and under the LGPL license.
 # LANL added functionality to the original work. The original work plus
 # LANL contributions is found at https: // github.com/jti-lanl/aws4c.
 
@@ -57,7 +58,6 @@
 from storage_tools.node import NodeBase
 import sys
 import os
-import fire
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -67,7 +67,7 @@ class StorageInterface(NodeBase):
     def __init__(self, marfs_config=None, marfs_repo=None):
         super().__init__(marfs_config, marfs_repo)
         self.load_config_data()
-    
+
     def _trick_valid_host(self):
         self.fqdn = self.config.storage_nodes[0].hostname
         self.valid = self.valid_host()
@@ -105,7 +105,9 @@ class StorageInterface(NodeBase):
 
 
 class ZFSInterface(StorageInterface):
-    def __init__(self, marfs_config=None, marfs_repo=None, jbod="1", force_zpools=False):
+    def __init__(
+        self, marfs_config=None, marfs_repo=None, jbod="1", force_zpools=False
+            ):
         print("ZFS storage interface")
         self.jbod = str(jbod)
         self.force_zpools = force_zpools
@@ -239,16 +241,6 @@ class ZFSInterface(StorageInterface):
         Should zfs list and pick out datastores
         Should ignore nfs datastore
         Should filter out pools
-        NAME                       USED  AVAIL     REFER  MOUNTPOINT
-        tc-sn000-pool0            11.1M   113T      307K  none
-        tc-sn000-pool0/datastore  5.14M   113T     5.14M  /zfs/exports/repo10+2/pod0/block0/cap0
-        tc-sn000-pool0/nfs         358K   113T      358K  /zfs
-        tc-sn000-pool1            9.90M   113T      307K  none
-        tc-sn000-pool1/datastore  5.14M   113T     5.14M  /zfs/exports/repo10+2/pod0/block0/cap1
-        tc-sn000-pool2            9.34M   113T      307K  none
-        tc-sn000-pool2/datastore  5.14M   113T     5.14M  /zfs/exports/repo10+2/pod0/block0/cap2
-        tc-sn000-pool3            9.71M   113T      307K  none
-        tc-sn000-pool3/datastore  5.14M   113T     5.14M  /zfs/exports/repo10+2/pod0/block0/cap3
         """
         cmd = "zfs list"
         self.run(cmd)
@@ -256,7 +248,7 @@ class ZFSInterface(StorageInterface):
         if not p.stderr:
             data = p.stdout.decode('utf-8').strip().split("\n")
             data = [item.split() for item in data]
-            # drop pools and NFS datastores because the NFS datastore is special
+            # drop pools and NFS datastores
             data = [item for item in data if "/" in item[0]
                     and "nfs" not in item[0]]
             data = [item for item in data if f"jbod{self.jbod}" in item[0]]
@@ -281,7 +273,8 @@ class ZFSInterface(StorageInterface):
             pools = self.get_pools()
             pool_name = pools[0][0]
 
-        cmd = f"zfs create {pool_name}/nfs -o mountpoint={self.config.storage_top}"
+        cmd = f"zfs create {pool_name}/nfs " + \
+            f"-o mountpoint={self.config.storage_top}"
         self.run(cmd)
 
     def make_all_datastores(self, datastore_name="datastore"):
@@ -302,9 +295,7 @@ class ZFSInterface(StorageInterface):
         """
         This does not work with mutiple deployments
         if there are other datastores it doesn't know what to do
-        
         """
-        # TODO get datastores by name to mount the right datastores in the right spot
         # Default to "datastore" as the name
         datastores_data = self.get_datastores()
         datastores_data = [item[0] for item in datastores_data]
@@ -313,8 +304,8 @@ class ZFSInterface(StorageInterface):
             name = datastore.split("/")[-1]
             if name == datastore_name:
                 datastores.append(datastore)
-
-        for datastore, cap in zip(datastores, range(int(self.working_repo.dal.caps))):
+        caps = range(int(self.working_repo.dal.caps))
+        for datastore, cap in zip(datastores, caps):
             pbc_path = "/".join([
                 f"{self.config.storage_top}",
                 f"{self.working_repo.name}",
@@ -378,7 +369,7 @@ class ZFSInterface(StorageInterface):
         # need to make certain we don't over ride an
         # existing deployment
         if not self.check_zfs_ready:
-            #do something
+            # do something
             pass
         self.set_working_repo(repo_name)
         self.make_pools()
