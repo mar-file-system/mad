@@ -142,10 +142,25 @@ class NodeBase(object):
         """
         takes a string and executes the command
         """
-        p = subprocess.run(
-            cmd.split(),
-            capture_output=get_output,
-            timeout=timeout
-        )
+        try:
+            p = subprocess.run(
+                cmd.split(),
+                capture_output=get_output,
+                timeout=timeout
+            )
+        except:
+            if get_output:
+                p = subprocess.run(
+                    cmd.split(),
+                    stdout = subprocess.PIPE,
+                    stderr = subprocess.PIPE,
+                    timeout=timeout
+               )
+            else:
+                p = subprocess.run(
+                    cmd.split(),
+                    timeout=timeout
+               )
+            
         self.plist.append(p)
         self.last_command = p

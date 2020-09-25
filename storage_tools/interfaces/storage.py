@@ -193,9 +193,6 @@ class ZFSInterface(StorageInterface):
         """
         ZFSTOOL
         """
-        # Could allow user to specify pool prefix?
-        # {prefix}-pool{pool_num}
-        # default {hostname}-pool{pool_num}
 
         disks = self.get_disks()
         disk_pools = {}

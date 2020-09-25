@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright(c) 2015, Los Alamos National Security, LLC
 # All rights reserved.
 
@@ -201,6 +202,10 @@ if __name__ == '__main__':
         default=False
     )
     parser_setup_zfs.set_defaults(func=setup_zfs)
+
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(1)
 
     args = parser.parse_args()
     args.func(args)
