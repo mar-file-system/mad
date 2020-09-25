@@ -104,11 +104,10 @@ class StorageInterface(NodeBase):
 
 class ZFSInterface(StorageInterface):
     def __init__(
-        self, marfs_config=None, marfs_repo=None, jbod="1", force_zpools=False
-            ):
+        self, marfs_config=None, marfs_repo=None, jbod="1"
+    ):
         print("ZFS storage interface")
         self.jbod = str(jbod)
-        self.force_zpools = force_zpools
         super().__init__(marfs_config, marfs_repo)
 
     def get_disks(self):
@@ -183,14 +182,14 @@ class ZFSInterface(StorageInterface):
         else:
             return None
 
-    def create_zpool(self, pool_name, disks):
-        if self.force_zpools:
+    def create_zpool(self, pool_name, disks, force_zpools):
+        if force_zpools:
             cmd = f'zpool create -f {pool_name} raidz3 {disks}'
         else:
             cmd = f'zpool create {pool_name} raidz3 {disks}'
         self.run(cmd, timeout=None)
 
-    def make_pools(self):
+    def make_pools(self, force_zpools):
         """
         ZFSTOOL
         """
@@ -208,7 +207,7 @@ class ZFSInterface(StorageInterface):
             pool_t = f"{self.hostname}-jbod{self.jbod}-pool{pool_num}"
             print(pool_t)
             add_disks = " ".join(disk_pools[pool_num])
-            self.create_zpool(pool_t, add_disks)
+            self.create_zpool(pool_t, add_disks, force_zpools)
             print(self.plist[-1])
             print(add_disks)
             self.set_pool_opts(pool_t)
@@ -352,10 +351,12 @@ class ZFSInterface(StorageInterface):
 
         return True
 
-    def setup_zfs(self, repo_name, datastore_name="datastore"):
+    def setup_zfs(
+        self, repo_name, datastore_name="datastore", force_zpools=False
+    ):
         # not sure if I need the inputs and to set working repo here
         self.set_working_repo(repo_name)
-        self.make_pools()
+        self.make_pools(force_zpools)
         self.make_zfs_nfs()
 
     def deploy_repo(self, repo_name, datastore_name="datastore"):
@@ -370,8 +371,8 @@ class ZFSInterface(StorageInterface):
             # do something
             pass
         self.set_working_repo(repo_name)
-        self.make_pools()
-        self.make_zfs_nfs()
+        # self.make_pools()
+        # self.make_zfs_nfs()
         self.make_all_datastores(datastore_name)
         self.mount_all_datastores(datastore_name)
         self.create_pod_block_cap_scatter()

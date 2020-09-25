@@ -94,6 +94,11 @@ def deploy_gpfs(args):
     mi.deploy_repo(args.repo_name)
 
 
+def setup_zfs(args):
+    si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
+    si.setup_zfs(args.repo_name, args.datastore_name, args.force_zpools)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -117,7 +122,6 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_deploy_zfs.add_argument(
-        '-d',
         '--datastore_name',
         type=str,
         metavar="",
@@ -125,7 +129,6 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_deploy_zfs.add_argument(
-        '-jbod',
         '--jbod',
         type=str,
         metavar="",
@@ -158,6 +161,46 @@ if __name__ == '__main__':
         help='Path to GPFS device'
     )
     parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
+
+    parser_setup_zfs = subparsers.add_parser(
+        'setup_zfs',
+        prog="setup_zfs",
+        help="Setup ZFS zpools for MarFS"
+    )
+    parser_setup_zfs.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File'
+    )
+    parser_setup_zfs.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy'
+    )
+    parser_setup_zfs.add_argument(
+        '--datastore_name',
+        type=str,
+        metavar="",
+        help="Name of datastore to deploy",
+        default="datastore"
+    )
+    parser_setup_zfs.add_argument(
+        '--jbod',
+        type=str,
+        metavar="",
+        help="JBOD number",
+        default="1"
+    )
+    parser_setup_zfs.add_argument(
+        '--force_zpools',
+        type=bool,
+        metavar="",
+        help="Force zpool creation",
+        default=False
+    )
+    parser_setup_zfs.set_defaults(func=setup_zfs)
 
     args = parser.parse_args()
     args.func(args)
