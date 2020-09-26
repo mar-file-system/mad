@@ -83,12 +83,12 @@
 
             <!-- Packed Objects -->
             <packing enabled="yes">
-                <max_files>4096<max_files>
+                <max_files>4096</max_files>
             </packing>
 
             <!-- Chunked Objects -->
             <chunking enabled="yes">
-                <max_size>1073741824<max_size>
+                <max_size>1073741824</max_size>
             </chunking>
 
             <!-- Object Distribution -->
@@ -96,7 +96,7 @@
                 <pods>1</pods>
                 <blocks>12</blocks>
                 <caps>4</caps>
-                <scatters>4096<scatters>
+                <scatters>4096</scatters>
             </distribution>
 
             <!-- I/O Pattern -->

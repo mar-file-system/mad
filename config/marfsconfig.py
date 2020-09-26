@@ -220,6 +220,49 @@ class LazyConfig(QuickObject):
         pass
 
 
+class MarfsConfig(object):
+    def __init__(self, config_path=None):
+        pass
+
+    def load_config(self, config_path):
+        self.get_config_path(config_path)
+
+        with open(self.config_path) as fp:
+            data = etree.parse(fp)
+        if data:
+            data = data.getroot()
+            super().__init__(data)
+            self.repos = [Repo(item) for item in data.findall("repo")]
+            self.storage_nodes = [
+                StorageNode(item) for item in data.findall("storage_node")
+            ]
+            self.fta_nodes = [
+                FtaNode(item) for item in data.findall("fta_node")
+            ]
+            self.metadata_nodes = [
+                MetaDataNode(item) for item in data.findall("metadata_node")
+            ]
+            self.int_nodes = [Node(item) for item in data.findall("int_node")]
+            self.all_hosts = self.storage_nodes + self.fta_nodes + \
+                self.metadata_nodes + self.int_nodes
+        else:
+            sys.exit("Error: empty config")
+
+    def get_config_path(self, config_path):
+        if config_path:
+            print("CONFIG: ", config_path)
+            self.config_path = config_path
+        else:
+            config_path = os.environ.get("MARFSCONFIGRC")
+            if config_path:
+                self.config_path = config_path
+            else:
+                self.config_path = "/etc/marfsconfig.xml"
+
+        if not os.path.exists(self.config_path):
+            sys.exit("could not find config file")
+
+
 class ConfigTool(object):
     """
     Used to manipulate config file
