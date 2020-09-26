@@ -86,6 +86,17 @@ class StorageNode(Node):
         self.pod = e.find("pod")
         self.block = e.find("block")
 
+    def to_xml(self, parent):
+        #elem = etree.Element()
+        p = etree.Element("pod")
+        p.text = self.pod
+        return p
+        
+        #print(parent)
+        #d.text = self.pod
+        #block
+
+
 
 class Protection(object):
     def __init__(self, e):
@@ -96,13 +107,13 @@ class Protection(object):
 
 class Packing(object):
     def __init__(self, e):
-        self.enabled = e.attrib("enabled")
+        self.enabled = e.attrib["enabled"]
         self.max_files = e.find("max_files")
 
 
 class Chunking(object):
     def __init__(self, e):
-        self.enabled = e.attrib("enabled")
+        self.enabled = e.attrib["enabled"]
         self.max_size = e.find("max_size")
 
 
@@ -153,7 +164,7 @@ class Data(object):
         self.chunking = Chunking(e.find("chunking"))
         self.distribution = Distribution(e.find("distribution"))
         self._io = _IO(e.find("io"))
-        self.dal = Dal(e.find("dal"))
+        self.dal = Dal(e.find("DAL"))
 
 
 class Metadata(object):
@@ -162,6 +173,7 @@ class Metadata(object):
         self.namespaces = Namespace(self.namespaces.findall("ns"))
         self.direct_read = e.find("direct").attrib["read"]
         self.direct_write = e.find("direct").attrib["write"]
+        self.mdal = Mdal(e.find("MDAL"))
 
 
 class Namespace(object):
@@ -273,5 +285,8 @@ class ConfigTool(object):
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
     print(mcfg.version)
-    for item in mcfg.hosts.storage_nodes:
-        print(item.hostname)
+    # for item in mcfg.hosts.storage_nodes:
+    #     print(item.hostname)
+    e = etree.Element("root")
+    e.append(mcfg.hosts.storage_nodes[0].to_xml(e))
+    print(e.tostring())

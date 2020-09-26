@@ -1,0 +1,103 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+
+<marfs_config version="2.0">
+
+    <!-- Mount Point -->
+    <mnt_top></mnt_top>
+
+    <!-- Host Definitions -->
+    <hosts>
+        <storage_node hostname="">
+            <pod>0</pod>
+            <block>0</block>
+        </storage_node>
+        
+        <batch_node hostname="" />
+
+        <metadata_node hostname="" />
+        
+        <interactive_node hostname="" />
+    </hosts>
+
+    <!-- REPOS -->
+    <repo name="">
+        <data>
+            <storage_top></storage_top> <!-- This might belong somewhere else -->
+            <!-- Object Erasure -->
+            <protection>
+                <N></N>
+                <E></E>
+                <BSZ></BSZ>
+            </protection>
+
+            <!-- Packed Objects -->
+            <packing enabled="">
+                <max_files></max_files>
+            </packing>
+
+            <!-- Chunked Objects -->
+            <chunking enabled="">
+                <max_size></max_size>
+            </chunking>
+
+            <!-- Object Distribution -->
+            <distribution>
+                <pods></pods>
+                <blocks></blocks>
+                <caps></caps>
+                <scatters></scatters>
+            </distribution>
+
+            <!-- I/O Pattern -->
+            <io>
+                <read_size></read_size>
+                <write_size></write_size>
+            </io>
+
+            <!-- DAL Definition -->
+            <DAL type="">
+                <!-- Tree Structure for Objects -->
+                <dir_template></dir_template>
+                <!-- Restricted Directory (optional) -->
+                <security_root></security_root>
+            </DAL>
+        </data>
+
+        <metadata>
+            <!-- All Namespaces -->
+            <namespaces>
+                <ns name="">
+                    <quota>
+                        <files></files>
+                        <data></data>
+                    </quota>
+                    <perms>
+                        <interactive></interactive>
+                        <batch></batch>
+                    </perms>
+                </ns>
+                <ns name="">
+                    <quota>
+                        <files></files>
+                        <data></data>
+                    </quota>
+                    <perms>
+                        <interactive></interactive>
+                        <batch></batch>
+                    </perms>
+                </ns>
+            </namespaces>
+
+            <!-- Data On Metadata -->
+            <direct read="" write=""/>
+
+            <!-- MDAL Definition -->
+            <MDAL type="">
+                <!-- Root of Namespace Tree -->
+                <ns_root></ns_root>
+                <!-- Restricted Directory (optional) -->
+                <security_root></security_root>
+            </MDAL>
+        </metadata>
+    </repo>
+</marfs_config>
