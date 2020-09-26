@@ -83,82 +83,77 @@ class InteractiveNode(Node):
 class StorageNode(Node):
     def __init__(self, e):
         super().__init__(e)
-        self.pod = e.find("pod")
-        self.block = e.find("block")
+        self.pod = e.find("pod").text
+        self.block = e.find("block").text
 
-    def to_xml(self, parent):
-        #elem = etree.Element()
-        p = etree.Element("pod")
-        p.text = self.pod
-        return p
-        
-        #print(parent)
-        #d.text = self.pod
-        #block
-
+    def to_xml(self):
+        elem = etree.Element("storage_node", hostname=self.hostname)
+        etree.SubElement(elem, "pod").text = self.pod
+        etree.SubElement(elem, "block").text = self.block
+        return elem
 
 
 class Protection(object):
     def __init__(self, e):
-        self.n = e.find("N")
-        self.e = e.find("E")
-        self.bsz = e.find("BSZ")
+        self.n = e.find("N").text
+        self.e = e.find("E").text
+        self.bsz = e.find("BSZ").text
 
 
 class Packing(object):
     def __init__(self, e):
         self.enabled = e.attrib["enabled"]
-        self.max_files = e.find("max_files")
+        self.max_files = e.find("max_files").text
 
 
 class Chunking(object):
     def __init__(self, e):
         self.enabled = e.attrib["enabled"]
-        self.max_size = e.find("max_size")
+        self.max_size = e.find("max_size").text
 
 
 class Distribution(object):
     def __init__(self, e):
-        self.pods = e.find("pods")
-        self.blocks = e.find("blocks")
-        self.caps = e.find("caps")
-        self.scatters = e.find("scatters")
+        self.pods = e.find("pods").text
+        self.blocks = e.find("blocks").text
+        self.caps = e.find("caps").text
+        self.scatters = e.find("scatters").text
 
 
 class _IO(object):
     def __init__(self, e):
-        self.read_size = e.find("read_size")
-        self.write_size = e.find("write_size")
+        self.read_size = e.find("read_size").text
+        self.write_size = e.find("write_size").text
 
 
 class Quota(object):
     def __init__(self, e):
-        self.files = e.find("files")
-        self.data = e.find("data")
+        self.files = e.find("files").text
+        self.data = e.find("data").text
 
 
 class Permissions(object):
     def __init__(self, e):
-        self.interactive = e.find("interactive")
-        self.batch = e.find("batch")
+        self.interactive = e.find("interactive").text
+        self.batch = e.find("batch").text
 
 
 class Dal(object):
     def __init__(self, e):
-        self.dir_template = e.find("dir_template")
-        self.security_root = e.find("security_root")
+        self.dir_template = e.find("dir_template").text
+        self.security_root = e.find("security_root").text
 
 
 class Mdal(object):
     def __init__(self, e):
         self.type = e.attrib["type"]
-        self.ns_root = e.find("ns_root")
-        self.security_root = e.find("security_root")
+        self.ns_root = e.find("ns_root").text
+        self.security_root = e.find("security_root").text
 
 
 class Data(object):
     def __init__(self, e):
-        self.storage_top = e.find("storage_top")
+        self.storage_top = e.find("storage_top").text
         self.protection = Protection(e.find("protection"))
         self.packing = Packing(e.find("packing"))
         self.chunking = Chunking(e.find("chunking"))
@@ -225,7 +220,7 @@ class MarFSConfig(object):
         self.element_tree_root = None
         self.load_config(config_path)
         self.version = self.element_tree_root.attrib["version"]
-        self.mnt_top = self.element_tree_root.find("mnt_top")
+        self.mnt_top = self.element_tree_root.find("mnt_top").text
         self.hosts = Hosts(self.element_tree_root.find("hosts"))
         self.repos = [Repo(item)
                       for item in self.element_tree_root.findall("repo")]
@@ -288,5 +283,6 @@ if __name__ == '__main__':
     # for item in mcfg.hosts.storage_nodes:
     #     print(item.hostname)
     e = etree.Element("root")
-    e.append(mcfg.hosts.storage_nodes[0].to_xml(e))
-    print(e.tostring())
+    print(mcfg.hosts.storage_nodes[0].pod)
+    e.append(mcfg.hosts.storage_nodes[0].to_xml())
+    print(etree.tostring(e, pretty_print=True).decode("utf-8"))
