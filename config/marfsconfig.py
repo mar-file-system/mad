@@ -60,102 +60,149 @@ import os
 from lxml import etree
 
 
-class QuickObject(object):
-    def __init__(self, etree_element):
-        for child in etree_element.getchildren():
-            if len(child) == 0:
-                setattr(self, child.tag, child.text)
+class Node(object):
+    def __init__(self, e):
+        self.hostname = e.attrib["hostname"]
 
 
-class Node(QuickObject):
-    def __init__(self, element_tree):
-        # Forward declarations
-        self.hostname = None
-        super().__init__(element_tree)
+class BatchNode(Node):
+    def __init__(self, e):
+        super().__init__(e)
 
 
-class FtaNode(Node):
-    def __init__(self, element_tree):
-        super().__init__(element_tree)
+class MetadataNode(Node):
+    def __init__(self, e):
+        super().__init__(e)
 
 
-class MetaDataNode(Node):
-    def __init__(self, element_tree):
-        super().__init__(element_tree)
+class InteractiveNode(Node):
+    def __init__(self, e):
+        super().__init__(e)
 
 
-class IntNode(Node):
-    def __init__(self, element_tree):
-        super().__init__(element_tree)
+class StorageNode(Node):
+    def __init__(self, e):
+        super().__init__(e)
+        self.pod = e.find("pod")
+        self.block = e.find("block")
 
 
-class StorageNode(QuickObject):
-    def __init__(self, element_tree):
-        # Forward declarations
-        self.hostname = None
-        self.pod = None
-        self.block = None
-        super().__init__(element_tree)
+class Protection(object):
+    def __init__(self, e):
+        self.n = e.find("N")
+        self.e = e.find("E")
+        self.bsz = e.find("BSZ")
 
 
-class Dal(QuickObject):
-    def __init__(self, element_tree):
-        # Forward declarations
-        self.type = None
-        self.n = None
-        self.e = None
-        self.pods = None
-        self.blocks = None
-        self.caps = None
-        self.scatter_width = None
-        self.degraded_log_dir = None
-        super().__init__(element_tree)
+class Packing(object):
+    def __init__(self, e):
+        self.enabled = e.attrib("enabled")
+        self.max_files = e.find("max_files")
 
 
-class Namespace(QuickObject):
-    def __init__(self, element_tree):
-        # Forward declarations
-        self.id = None
-        self.name = None
-        self.mnt_path = None
-        self.bperms = None
-        self.iperms = None
-        self.min_size = None
-        self.max_size = None
-        self.md_path = None
-        self.trash_md_path = None
-        self.fsinfo_path = None
-        self.quota_space = None
-        self.quota_names = None
-        super().__init__(element_tree)
+class Chunking(object):
+    def __init__(self, e):
+        self.enabled = e.attrib("enabled")
+        self.max_size = e.find("max_size")
 
 
-class Repo(QuickObject):
-    def __init__(self, repo_element_tree):
-        # Forward declarations
-        self.name = None
-        self.host = None
-        self.host_offset = None
-        self.host_count = None
-        self.update_in_place = None
-        self.ssl = None
-        self.access_method = None
-        self.chunk_size = None
-        self.max_pack_file_count = None
-        self.min_pack_file_count = None
-        self.max_pack_file_size = None
-        self.min_pack_file_size = None
-        self.latency = None
-        self.timing_flags = None
-        self.dal = None
-        super().__init__(repo_element_tree)
-        self.dal = Dal(repo_element_tree.find("dal"))
-        self.namespaces = [
-            Namespace(item) for item in repo_element_tree.findall("namespace")
-            ]
+class Distribution(object):
+    def __init__(self, e):
+        self.pods = e.find("pods")
+        self.blocks = e.find("blocks")
+        self.caps = e.find("caps")
+        self.scatters = e.find("scatters")
 
 
-class LazyConfig(QuickObject):
+class _IO(object):
+    def __init__(self, e):
+        self.read_size = e.find("read_size")
+        self.write_size = e.find("write_size")
+
+
+class Quota(object):
+    def __init__(self, e):
+        self.files = e.find("files")
+        self.data = e.find("data")
+
+
+class Permissions(object):
+    def __init__(self, e):
+        self.interactive = e.find("interactive")
+        self.batch = e.find("batch")
+
+
+class Dal(object):
+    def __init__(self, e):
+        self.dir_template = e.find("dir_template")
+        self.security_root = e.find("security_root")
+
+
+class Mdal(object):
+    def __init__(self, e):
+        self.type = e.attrib["type"]
+        self.ns_root = e.find("ns_root")
+        self.security_root = e.find("security_root")
+
+
+class Data(object):
+    def __init__(self, e):
+        self.storage_top = e.find("storage_top")
+        self.protection = Protection(e.find("protection"))
+        self.packing = Packing(e.find("packing"))
+        self.chunking = Chunking(e.find("chunking"))
+        self.distribution = Distribution(e.find("distribution"))
+        self._io = _IO(e.find("io"))
+        self.dal = Dal(e.find("dal"))
+
+
+class Metadata(object):
+    def __init__(self, e):
+        self.namespaces = e.find("namespaces")
+        self.namespaces = Namespace(self.namespaces.findall("ns"))
+        self.direct_read = e.find("direct").attrib["read"]
+        self.direct_write = e.find("direct").attrib["write"]
+
+
+class Namespace(object):
+    def __init__(self, e):
+        self.name = e.attrib["name"]
+        self.quota = Quota(e.find("quota"))
+        self.perms = Permissions(e.find("perms"))
+
+
+class Repo(object):
+    def __init__(self, e):
+        self.name = e.attrib["name"]
+        self.data = Data(e.find("data"))
+
+
+class Hosts(object):
+    def __init__(self, e):
+        self.storage_nodes = [
+            StorageNode(item) for item in e.findall("storage_node")
+        ]
+        self.batch_nodes = [
+            BatchNode(item) for item in e.findall("batch_node")
+        ]
+        self.interactive_nodes = [
+            InteractiveNode(item) for item in e.findall("interactive_node")
+        ]
+        self.metadata_nodes = [
+            MetadataNode(item) for item in e.findall("metadata_node")
+        ]
+
+    @property
+    def all_hostname(self):
+        all_names = []
+        all_names.extend([item.hostname for item in self.storage_nodes])
+        all_names.extend([item.hostname for item in self.batch_nodes])
+        all_names.extend([item.hostname for item in self.interactive_nodes])
+        all_names.extend([item.hostname for item in self.metadata_nodes])
+        return all_names
+
+
+class MarFSConfig(object):
     """
     Produces an object with all the keys of our config xml file turned
     into attributes for dot notation.
@@ -163,19 +210,13 @@ class LazyConfig(QuickObject):
     Is harder to work with than static
     """
     def __init__(self, config_path=None):
-        # Forward declarations
-        self.name = None
-        self.version = None
-        self.mnt_top = None
-        self.mdfs_top = None
-        self.storage_top = None
-        self.repos = None
-        self.storage_nodes = None
-        self.fta_nodes = None
-        self.int_nodes = None
-        self.metadata_nodes = None
-        self.all_hosts = None
+        self.element_tree_root = None
         self.load_config(config_path)
+        self.version = self.element_tree_root.attrib["version"]
+        self.mnt_top = self.element_tree_root.find("mnt_top")
+        self.hosts = Hosts(self.element_tree_root.find("hosts"))
+        self.repos = [Repo(item)
+                      for item in self.element_tree_root.findall("repo")]
 
     def load_config(self, config_path):
         self.get_config_path(config_path)
@@ -183,21 +224,7 @@ class LazyConfig(QuickObject):
         with open(self.config_path) as fp:
             data = etree.parse(fp)
         if data:
-            data = data.getroot()
-            super().__init__(data)
-            self.repos = [Repo(item) for item in data.findall("repo")]
-            self.storage_nodes = [
-                StorageNode(item) for item in data.findall("storage_node")
-                ]
-            self.fta_nodes = [
-                FtaNode(item) for item in data.findall("fta_node")
-                ]
-            self.metadata_nodes = [
-                MetaDataNode(item) for item in data.findall("metadata_node")
-                ]
-            self.int_nodes = [Node(item) for item in data.findall("int_node")]
-            self.all_hosts = self.storage_nodes + self.fta_nodes + \
-                self.metadata_nodes + self.int_nodes
+            self.element_tree_root = data.getroot()
         else:
             sys.exit("Error: empty config")
 
@@ -218,49 +245,6 @@ class LazyConfig(QuickObject):
     def create_config_file(self):
         # TODO This should be able to go backwards as well
         pass
-
-
-class MarfsConfig(object):
-    def __init__(self, config_path=None):
-        pass
-
-    def load_config(self, config_path):
-        self.get_config_path(config_path)
-
-        with open(self.config_path) as fp:
-            data = etree.parse(fp)
-        if data:
-            data = data.getroot()
-            super().__init__(data)
-            self.repos = [Repo(item) for item in data.findall("repo")]
-            self.storage_nodes = [
-                StorageNode(item) for item in data.findall("storage_node")
-            ]
-            self.fta_nodes = [
-                FtaNode(item) for item in data.findall("fta_node")
-            ]
-            self.metadata_nodes = [
-                MetaDataNode(item) for item in data.findall("metadata_node")
-            ]
-            self.int_nodes = [Node(item) for item in data.findall("int_node")]
-            self.all_hosts = self.storage_nodes + self.fta_nodes + \
-                self.metadata_nodes + self.int_nodes
-        else:
-            sys.exit("Error: empty config")
-
-    def get_config_path(self, config_path):
-        if config_path:
-            print("CONFIG: ", config_path)
-            self.config_path = config_path
-        else:
-            config_path = os.environ.get("MARFSCONFIGRC")
-            if config_path:
-                self.config_path = config_path
-            else:
-                self.config_path = "/etc/marfsconfig.xml"
-
-        if not os.path.exists(self.config_path):
-            sys.exit("could not find config file")
 
 
 class ConfigTool(object):
@@ -287,4 +271,7 @@ class ConfigTool(object):
 
 
 if __name__ == '__main__':
-    mcfg = LazyConfig("config.xml")
+    mcfg = MarFSConfig("new_config.xml")
+    print(mcfg.version)
+    for item in mcfg.hosts.storage_nodes:
+        print(item.hostname)
