@@ -69,18 +69,21 @@ class MetadataInterface(NodeBase):
     def create_pod_block_caps(self):
         # Metadata nodes can create all pod/block/cap dirs from one node
         # For both GPFS and single node deployments
-        for pod in range(int(self.working_repo.dal.pods)):
+        pods = range(int(self.working_repo.data.distribution.pods))
+        blocks = range(int(self.working_repo.data.distribution.blocks))
+        ns_root = self.working_repo.metadata.mdal.ns_root
+        for pod in pods:
             self.pod_num = pod
-            for block in range(int(self.working_repo.dal.blocks)):
+            for block in blocks:
                 self.block_num = block
-                caps = self.get_pod_block_caps(self.config.mdfs_top)
+                caps = self.get_pod_block_caps(ns_root)
                 for cap in caps:
                     os.makedirs(cap, exist_ok=True)
 
     def deploy_namespace(self, namespace):
         """
         """
-        link_target = self.config.mdfs_top + "/" + namespace.name
+        link_target = self.working_repo.mdal.ns_root + "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"
@@ -117,7 +120,7 @@ class GPFSInterface(MetadataInterface):
 
     def check_mdfs_top(self):
         try:
-            contents = os.listdir(self.config.mdfs_top)
+            contents = os.listdir(self.working_repo.mdal.ns_root)
             if len(contents) == 0:
                 print("md top is empty")
         except FileNotFoundError:
@@ -138,7 +141,7 @@ class GPFSInterface(MetadataInterface):
                 print("doing nothing")
 
     def deploy_namespace(self, namespace):
-        link_target = self.config.mdfs_top + "/" + namespace.name
+        link_target = self.working_repo.mdal.ns_root + "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"

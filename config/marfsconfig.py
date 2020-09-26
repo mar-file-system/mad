@@ -165,7 +165,9 @@ class Data(object):
 class Metadata(object):
     def __init__(self, e):
         self.namespaces = e.find("namespaces")
-        self.namespaces = Namespace(self.namespaces.findall("ns"))
+        self.namespaces = [
+            Namespace(item) for item in self.namespaces.findall("ns")
+        ]
         self.direct_read = e.find("direct").attrib["read"]
         self.direct_write = e.find("direct").attrib["write"]
         self.mdal = Mdal(e.find("MDAL"))
@@ -182,6 +184,7 @@ class Repo(object):
     def __init__(self, e):
         self.name = e.attrib["name"]
         self.data = Data(e.find("data"))
+        self.metadata = Metadata(e.find("metadata"))
 
 
 class Hosts(object):
@@ -200,7 +203,7 @@ class Hosts(object):
         ]
 
     @property
-    def all_hostname(self):
+    def all_hostnames(self):
         all_names = []
         all_names.extend([item.hostname for item in self.storage_nodes])
         all_names.extend([item.hostname for item in self.batch_nodes])
