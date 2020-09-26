@@ -1,0 +1,154 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+
+<marfs_config version="2.0">
+
+    <!-- Mount Point -->
+    <mnt_top>/campaign</mnt_top>
+
+    <!-- Host Definitions -->
+    <hosts>
+        <storage_node hostname="ex-sn001.ex.net">
+            <pod>0</pod>
+            <block>0</block>
+        </storage_node>
+        <storage_node hostname="ex-sn002.ex.net">
+            <pod>0</pod>
+            <block>1</block>
+        </storage_node>
+        <storage_node hostname="ex-sn003.ex.net">
+            <pod>0</pod>
+            <block>2</block>
+        </storage_node>
+        <storage_node hostname="ex-sn004.ex.net">
+            <pod>0</pod>
+            <block>3</block>
+        </storage_node>
+        <storage_node hostname="ex-sn005.ex.net">
+            <pod>0</pod>
+            <block>0</block>
+        </storage_node>
+        <storage_node hostname="ex-sn006.ex.net">
+            <pod>0</pod>
+            <block>1</block>
+        </storage_node>
+        <storage_node hostname="ex-sn007.ex.net">
+            <pod>0</pod>
+            <block>2</block>
+        </storage_node>
+        <storage_node hostname="ex-sn008.ex.net">
+            <pod>0</pod>
+            <block>3</block>
+        </storage_node>
+        <storage_node hostname="ex-sn009.ex.net">
+            <pod>0</pod>
+            <block>0</block>
+        </storage_node>
+        <storage_node hostname="ex-sn010.ex.net">
+            <pod>0</pod>
+            <block>1</block>
+        </storage_node>
+        <storage_node hostname="ex-sn011.ex.net">
+            <pod>0</pod>
+            <block>2</block>
+        </storage_node>
+        <storage_node hostname="ex-sn012.ex.net">
+            <pod>0</pod>
+            <block>3</block>
+        </storage_node>
+        
+        <batch_node hostname="ex-tn001.ex.net" />
+        <batch_node hostname="ex-tn002.ex.net" />
+        <batch_node hostname="ex-tn003.ex.net" />
+        <batch_node hostname="ex-tn004.ex.net" />
+
+        <metadata_node hostname="ex-md001.ex.net" />
+        <metadata_node hostname="ex-md002.ex.net" />
+        <metadata_node hostname="ex-md003.ex.net" />
+        
+        <interactive_node hostname="ex-int001.ex.net" />
+        <interactive_node hostname="ex-int002.ex.net" />
+        <interactive_node hostname="ex-int003.ex.net" />
+    </hosts>
+
+    <!-- REPOS -->
+    <repo name="MC10+2">
+        <data>
+            <storage_top>/zfs/exports</storage_top> <!-- This might belong somewhere else -->
+            <!-- Object Erasure -->
+            <protection>
+                <N>10</N>
+                <E>2</E>
+                <BSZ>1048576</BSZ>
+            </protection>
+
+            <!-- Packed Objects -->
+            <packing enabled="yes">
+                <max_files>4096<max_files>
+            </packing>
+
+            <!-- Chunked Objects -->
+            <chunking enabled="yes">
+                <max_size>1073741824<max_size>
+            </chunking>
+
+            <!-- Object Distribution -->
+            <distribution>
+                <pods>1</pods>
+                <blocks>12</blocks>
+                <caps>4</caps>
+                <scatters>4096<scatters>
+            </distribution>
+
+            <!-- I/O Pattern -->
+            <io>
+                <read_size>5248000</read_size>
+                <write_size>5248000</write_size>
+            </io>
+
+            <!-- DAL Definition -->
+            <DAL type="posix">
+                <!-- Tree Structure for Objects -->
+                <dir_template>/gpfs/mc/repo10+2/pod%d/block%s/cap%d/scatter%d</dir_template>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/gpfs</security_root>
+            </DAL>
+        </data>
+
+        <metadata>
+            <!-- All Namespaces -->
+            <namespaces>
+                <ns name="ATCC6-0">
+                    <quota>
+                        <files></files>
+                        <data>549755813888000</data>
+                    </quota>
+                    <perms>
+                        <interactive>RM,WM,RD</interactive>
+                        <batch>RM,WM,RD,WD</batch>
+                    </perms>
+                </ns>
+                <ns name="space-with-literal-brackets\[in-name\]">
+                    <quota>
+                        <files>1024</files>
+                        <data>549755813888000</data>
+                    </quota>
+                    <perms>
+                        <interactive>RM,WM,RD</interactive>
+                        <batch>RM,WM,RD,WD</batch>
+                    </perms>
+                </ns>
+            </namespaces>
+
+            <!-- Data On Metadata -->
+            <direct read="yes" write="no"/>
+
+            <!-- MDAL Definition -->
+            <MDAL type="posix">
+                <!-- Root of Namespace Tree -->
+                <ns_root>/gpfs/marfs</ns_root>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/gpfs</security_root>
+            </MDAL>
+        </metadata>
+    </repo>
+</marfs_config>

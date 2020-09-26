@@ -163,6 +163,7 @@ if __name__ == '__main__':
     )
     parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
 
+    # Setup ZFS
     parser_setup_zfs = subparsers.add_parser(
         'setup_zfs',
         prog="setup_zfs",
