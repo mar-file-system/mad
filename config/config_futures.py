@@ -65,16 +65,60 @@ class XMLobj(object):
         self.elem = element
         self.e_name = element.tag
         self.attribs = element.attrib
+        if lazy:
+            self.__lazy_init()
+
+    def __lazy_init(self):
+        for child in self.elem.getchildren():
+            if len(child) == 0:
+                try:
+                    setattr(self, child.tag, child.text)
+                except TypeError:
+                    pass
+    
+    def get_just_attrs(self):
+        things = dir(self)
+        excludes = ["e_name", "elem"]
+        things = [thing for thing in things if "__" not in thing]
+        things = [thing for thing in things if not callable(self.__getattribute__(thing))]
+        things = [thing for thing in things if not isinstance(self.__getattribute__(thing), etree._Attrib)]
+        things = [thing for thing in things if thing not in self.attribs.keys()]
+        things = [thing for thing in things if thing not in excludes]
+        return things
+
+    def update_attribs(self):
+        attribs = self.__getattribute__("attribs")
+        print(attribs)
+        for thing in attribs:
+            if thing in self.attribs.keys():
+                if self.__getattribute__(thing) != self.attribs[thing]:
+                    self.attribs[thing] = self.__getattribute__(thing)
+
+    
+    def back_to_xml(self, parent):
+        things = self.get_just_attrs()
+        self.update_attribs()
+        elem = etree.SubElement(parent, self.e_name, self.attribs)
+        print(things)
+        for thing in things:
+            item = self.__getattribute__(thing)
+            print(type(item))
+            if isinstance(item, str):
+                etree.SubElement(elem, thing).text = item
+            elif isinstance(item, list):
+                for i in item:
+                    i.back_to_xml(elem)
+            else:
+                if item:
+                    item.back_to_xml(elem)                    
+
+        
 
 
 class Node(XMLobj):
     def __init__(self, e):
         super().__init__(e)
-        self.hostname = e.attrib["hostname"]
-    
-    def to_xml(self):
-        elem = etree.Element(self.e_name, hostname=self.hostname)
-        return elem
+        self.hostname = self.attribs["hostname"]
 
 
 class BatchNode(Node):
@@ -98,66 +142,83 @@ class StorageNode(Node):
         self.pod = e.find("pod").text
         self.block = e.find("block").text
 
-    def to_xml(self):
-        elem = etree.Element("storage_node", hostname=self.hostname)
-        etree.SubElement(elem, "pod").text = self.pod
-        etree.SubElement(elem, "block").text = self.block
-        return elem
+    # def to_xml(self):
+    #     elem = etree.Element("storage_node", hostname=self.hostname)
+    #     etree.SubElement(elem, "pod").text = self.pod
+    #     etree.SubElement(elem, "block").text = self.block
+    #     return elem
 
 
-class Protection(object):
+class Protection(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.n = e.find("N").text
         self.e = e.find("E").text
         self.bsz = e.find("BSZ").text
 
 
-class Packing(object):
+class Packing(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.enabled = e.attrib["enabled"]
         self.max_files = e.find("max_files").text
 
 
-class Chunking(object):
+class Chunking(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.enabled = e.attrib["enabled"]
         self.max_size = e.find("max_size").text
 
 
-class Distribution(object):
+class Distribution(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.pods = e.find("pods").text
         self.blocks = e.find("blocks").text
         self.caps = e.find("caps").text
         self.scatters = e.find("scatters").text
 
 
-class _IO(object):
+class _IO(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.read_size = e.find("read_size").text
         self.write_size = e.find("write_size").text
 
 
-class Quota(object):
+class Quota(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.files = e.find("files").text
         self.data = e.find("data").text
 
 
-class Permissions(object):
+class Permissions(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.interactive = e.find("interactive").text
         self.batch = e.find("batch").text
 
 
-class Dal(object):
+class Direct(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
+        self.read = e.attrib["read"]
+        self.write = e.attrib["write"]
+
+
+class Dal(XMLobj):
+    def __init__(self, e):
+        super().__init__(e)
+        self.type = e.attrib["type"]
         self.dir_template = e.find("dir_template").text
         self.security_root = e.find("security_root").text
 
 
-class Mdal(object):
+class Mdal(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.type = e.attrib["type"]
         self.ns_root = e.find("ns_root").text
         self.security_root = e.find("security_root").text
@@ -174,25 +235,21 @@ class Data(XMLobj):
         self._io = _IO(e.find("io"))
         self.dal = Dal(e.find("DAL"))
 
-    def to_xml(self):
-        elem = etree.Element(self.e_name)
-        etree.SubElement(elem, "storage_top").text = self.storage_top
-        elem.append()
 
-
-class Metadata(object):
+class Metadata(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.namespaces = e.find("namespaces")
         self.namespaces = [
             Namespace(item) for item in self.namespaces.findall("ns")
         ]
-        self.direct_read = e.find("direct").attrib["read"]
-        self.direct_write = e.find("direct").attrib["write"]
         self.mdal = Mdal(e.find("MDAL"))
+        self.direct = Direct(e.find("direct"))
 
 
-class Namespace(object):
+class Namespace(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.name = e.attrib["name"]
         self.quota = Quota(e.find("quota"))
         self.perms = Permissions(e.find("perms"))
@@ -205,13 +262,10 @@ class Repo(XMLobj):
         self.data = Data(e.find("data"))
         self.metadata = Metadata(e.find("metadata"))
 
-    def to_xml(self):
-        elem = etree.Element(self.e_name, name=self.name)
-        elem.append(self.data.to_xml())
 
-
-class Hosts(object):
+class Hosts(XMLobj):
     def __init__(self, e):
+        super().__init__(e)
         self.storage_nodes = [
             StorageNode(item) for item in e.findall("storage_node")
         ]
@@ -235,7 +289,7 @@ class Hosts(object):
         return all_names
 
 
-class MarFSConfig(object):
+class MarFSConfig(XMLobj):
     """
     Produces an object with all the keys of our config xml file turned
     into attributes for dot notation.
@@ -245,6 +299,8 @@ class MarFSConfig(object):
     def __init__(self, config_path=None):
         self.element_tree_root = None
         self.load_config(config_path)
+        print(self.element_tree_root)
+        super().__init__(self.element_tree_root)
         self.version = self.element_tree_root.attrib["version"]
         self.mnt_top = self.element_tree_root.find("mnt_top").text
         self.hosts = Hosts(self.element_tree_root.find("hosts"))
@@ -279,6 +335,13 @@ class MarFSConfig(object):
         # TODO This should be able to go backwards as well
         pass
 
+    def to_xml(self):
+        elem = etree.Element("marfs_config", version=self.version)
+        for repo in self.repos:
+            repo.back_to_xml(elem)
+        
+        return elem
+
 
 class ConfigTool(object):
     """
@@ -303,17 +366,19 @@ class ConfigTool(object):
         pass
 
 
-# def test_back_to_xml():
-
-
-
-
 if __name__ == '__main__':
+    # mcfg = MarFSConfig("new_config.xml")
+    # print(mcfg.version)
+    # # for item in mcfg.hosts.storage_nodes:
+    # #     print(item.hostname)
+    # e = etree.Element("root")
+    # print(mcfg.hosts.storage_nodes[0].pod)
+    # e.append(mcfg.hosts.storage_nodes[0].to_xml())
+    # print(etree.tostring(e, pretty_print=True).decode("utf-8"))
     mcfg = MarFSConfig("new_config.xml")
-    print(mcfg.version)
-    # for item in mcfg.hosts.storage_nodes:
-    #     print(item.hostname)
-    e = etree.Element("root")
-    print(mcfg.hosts.storage_nodes[0].pod)
-    e.append(mcfg.hosts.storage_nodes[0].to_xml())
-    print(etree.tostring(e, pretty_print=True).decode("utf-8"))
+    a = mcfg.to_xml()
+    fp = open("test_out.xml", "w")
+    fp.write(etree.tostring(a, pretty_print=True).decode("utf-8"))
+    fp.close()
+    # root = etree.Element("marfs_config")
+    # mcfg.back_to_xml(root)

@@ -119,7 +119,7 @@
             <namespaces>
                 <ns name="ATCC6-0">
                     <quota>
-                        <files></files>
+                        <files>0</files>
                         <data>549755813888000</data>
                     </quota>
                     <perms>

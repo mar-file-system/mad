@@ -1,0 +1,59 @@
+<marfs_config version="2.0">
+  <repo name="MC10+2">
+    <data>
+      <io>
+        <read_size>5248000</read_size>
+        <write_size>5248000</write_size>
+      </io>
+      <chunking enabled="yes">
+        <max_size>1073741824</max_size>
+      </chunking>
+      <DAL type="posix">
+        <dir_template>/gpfs/mc/repo10+2/pod%d/block%s/cap%d/scatter%d</dir_template>
+        <security_root>/gpfs</security_root>
+      </DAL>
+      <distribution>
+        <blocks>12</blocks>
+        <caps>4</caps>
+        <pods>1</pods>
+        <scatters>4096</scatters>
+      </distribution>
+      <packing enabled="yes">
+        <max_files>4096</max_files>
+      </packing>
+      <protection>
+        <bsz>1048576</bsz>
+        <e>2</e>
+        <n>10</n>
+      </protection>
+      <storage_top>/zfs/exports</storage_top>
+    </data>
+    <metadata>
+      <direct read="yes" write="no"/>
+      <MDAL type="posix">
+        <ns_root>/gpfs/marfs</ns_root>
+        <security_root>/gpfs</security_root>
+      </MDAL>
+      <ns name="ATCC6-0">
+        <perms>
+          <batch>RM,WM,RD,WD</batch>
+          <interactive>RM,WM,RD</interactive>
+        </perms>
+        <quota>
+          <data>549755813888000</data>
+          <files>0</files>
+        </quota>
+      </ns>
+      <ns name="space-with-literal-brackets\[in-name\]">
+        <perms>
+          <batch>RM,WM,RD,WD</batch>
+          <interactive>RM,WM,RD</interactive>
+        </perms>
+        <quota>
+          <data>549755813888000</data>
+          <files>1024</files>
+        </quota>
+      </ns>
+    </metadata>
+  </repo>
+</marfs_config>
