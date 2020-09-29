@@ -65,7 +65,7 @@
             <namespaces>
                 <ns name="unit_test_ns">
                     <quota>
-                        <files></files>
+                        <files>0</files>
                         <data>549755813888000</data>
                     </quota>
                     <perms>

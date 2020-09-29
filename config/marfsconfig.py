@@ -65,16 +65,7 @@ class XMLobj(object):
         self.elem = element
         self.e_name = element.tag
         self.attribs = element.attrib
-        if lazy:
-            self.__lazy_init()
-
-    def __lazy_init(self):
-        for child in self.elem.getchildren():
-            if len(child) == 0:
-                try:
-                    setattr(self, child.tag, child.text)
-                except TypeError:
-                    pass
+        self.ensure_no_none()
 
     def get_just_attrs(self):
         things = dir(self)
@@ -88,22 +79,39 @@ class XMLobj(object):
         things = [t for t in things if t not in excludes]
         return things
 
+    def ensure_strings(self):
+        things = self.get_just_attrs()
+        for thing in things:
+            attrval = self.__getattribute__(thing)
+            if isinstance(attrval, dict):
+                pass
+            if isinstance(attrval, int):
+                setattr(self, thing, str(attrval))
+            if isinstance(attrval, float):
+                setattr(self, thing, str(attrval))
+
+    def ensure_no_none(self):
+        things = self.get_just_attrs()
+        for thing in things:
+            attrval = self.__getattribute__(thing)
+            if attrval is None:
+                print("\nERROR IN TAG:", thing, "\n")
+                sys.exit("Can't have empty values in config")
+
     def update_attribs(self):
         attribs = self.__getattribute__("attribs")
-        print(attribs)
         for thing in attribs:
             if thing in self.attribs.keys():
                 if self.__getattribute__(thing) != self.attribs[thing]:
                     self.attribs[thing] = self.__getattribute__(thing)
 
     def back_to_xml(self, parent):
+        self.ensure_strings()
         things = self.get_just_attrs()
         self.update_attribs()
         elem = etree.SubElement(parent, self.e_name, self.attribs)
-        print(things)
         for thing in things:
             item = self.__getattribute__(thing)
-            print(type(item))
             if isinstance(item, str):
                 etree.SubElement(elem, thing).text = item
             elif isinstance(item, list):
@@ -116,8 +124,8 @@ class XMLobj(object):
 
 class Node(XMLobj):
     def __init__(self, e):
+        self.hostname = e.attrib["hostname"]
         super().__init__(e)
-        self.hostname = self.attribs["hostname"]
 
 
 class BatchNode(Node):
@@ -137,95 +145,88 @@ class InteractiveNode(Node):
 
 class StorageNode(Node):
     def __init__(self, e):
-        super().__init__(e)
         self.pod = e.find("pod").text
         self.block = e.find("block").text
-
-    # def to_xml(self):
-    #     elem = etree.Element("storage_node", hostname=self.hostname)
-    #     etree.SubElement(elem, "pod").text = self.pod
-    #     etree.SubElement(elem, "block").text = self.block
-    #     return elem
+        super().__init__(e)
 
 
 class Protection(XMLobj):
     def __init__(self, e):
+        self.N = e.find("N").text
+        self.E = e.find("E").text
+        self.BSZ = e.find("BSZ").text
         super().__init__(e)
-        self.n = e.find("N").text
-        self.e = e.find("E").text
-        self.bsz = e.find("BSZ").text
 
 
 class Packing(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.enabled = e.attrib["enabled"]
         self.max_files = e.find("max_files").text
+        super().__init__(e)
 
 
 class Chunking(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.enabled = e.attrib["enabled"]
         self.max_size = e.find("max_size").text
+        super().__init__(e)
 
 
 class Distribution(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.pods = e.find("pods").text
         self.blocks = e.find("blocks").text
         self.caps = e.find("caps").text
         self.scatters = e.find("scatters").text
+        super().__init__(e)
 
 
 class _IO(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.read_size = e.find("read_size").text
         self.write_size = e.find("write_size").text
+        super().__init__(e)
 
 
 class Quota(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.files = e.find("files").text
         self.data = e.find("data").text
+        super().__init__(e)
 
 
 class Permissions(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.interactive = e.find("interactive").text
         self.batch = e.find("batch").text
+        super().__init__(e)
 
 
 class Direct(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.read = e.attrib["read"]
         self.write = e.attrib["write"]
+        super().__init__(e)
 
 
 class Dal(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.type = e.attrib["type"]
         self.dir_template = e.find("dir_template").text
         self.security_root = e.find("security_root").text
+        super().__init__(e)
 
 
 class Mdal(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.type = e.attrib["type"]
         self.ns_root = e.find("ns_root").text
         self.security_root = e.find("security_root").text
+        super().__init__(e)
 
 
 class Data(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.storage_top = e.find("storage_top").text
         self.protection = Protection(e.find("protection"))
         self.packing = Packing(e.find("packing"))
@@ -233,38 +234,37 @@ class Data(XMLobj):
         self.distribution = Distribution(e.find("distribution"))
         self._io = _IO(e.find("io"))
         self.dal = Dal(e.find("DAL"))
+        super().__init__(e)
 
 
 class Metadata(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
-        self.namespaces = e.find("namespaces")
         self.namespaces = [
-            Namespace(item) for item in self.namespaces.findall("ns")
+            Namespace(item) for item in e.findall("ns")
         ]
         self.mdal = Mdal(e.find("MDAL"))
         self.direct = Direct(e.find("direct"))
+        super().__init__(e)
 
 
 class Namespace(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.name = e.attrib["name"]
         self.quota = Quota(e.find("quota"))
         self.perms = Permissions(e.find("perms"))
+        super().__init__(e)
 
 
 class Repo(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.name = e.attrib["name"]
         self.data = Data(e.find("data"))
         self.metadata = Metadata(e.find("metadata"))
+        super().__init__(e)
 
 
 class Hosts(XMLobj):
     def __init__(self, e):
-        super().__init__(e)
         self.storage_nodes = [
             StorageNode(item) for item in e.findall("storage_node")
         ]
@@ -277,6 +277,7 @@ class Hosts(XMLobj):
         self.metadata_nodes = [
             MetadataNode(item) for item in e.findall("metadata_node")
         ]
+        super().__init__(e)
 
     @property
     def all_hostnames(self):
@@ -298,7 +299,6 @@ class MarFSConfig(XMLobj):
     def __init__(self, config_path=None):
         self.element_tree_root = None
         self.load_config(config_path)
-        print(self.element_tree_root)
         super().__init__(self.element_tree_root)
         self.version = self.element_tree_root.attrib["version"]
         self.mnt_top = self.element_tree_root.find("mnt_top").text
@@ -337,10 +337,9 @@ class MarFSConfig(XMLobj):
     def to_xml(self):
         elem = etree.Element("marfs_config", version=self.version)
         etree.SubElement(elem, "mnt_top").text = self.mnt_top
+        self.hosts.back_to_xml(elem)
         for repo in self.repos:
             repo.back_to_xml(elem)
-
-        self.hosts.back_to_xml(elem)
 
         return elem
 
@@ -383,5 +382,3 @@ class ConfigTool(object):
 
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
-    mcfg.hosts.storage_nodes[0].hostname = "ex-sn001.ex.net"
-    mcfg.write_config("test_out.xml")

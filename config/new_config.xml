@@ -116,28 +116,26 @@
 
         <metadata>
             <!-- All Namespaces -->
-            <namespaces>
-                <ns name="ATCC6-0">
-                    <quota>
-                        <files>0</files>
-                        <data>549755813888000</data>
-                    </quota>
-                    <perms>
-                        <interactive>RM,WM,RD</interactive>
-                        <batch>RM,WM,RD,WD</batch>
-                    </perms>
-                </ns>
-                <ns name="space-with-literal-brackets\[in-name\]">
-                    <quota>
-                        <files>1024</files>
-                        <data>549755813888000</data>
-                    </quota>
-                    <perms>
-                        <interactive>RM,WM,RD</interactive>
-                        <batch>RM,WM,RD,WD</batch>
-                    </perms>
-                </ns>
-            </namespaces>
+            <ns name="ATCC6-0">
+                <quota>
+                    <files>0</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
+            <ns name="space-with-literal-brackets\[in-name\]">
+                <quota>
+                    <files>1024</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
 
             <!-- Data On Metadata -->
             <direct read="yes" write="no"/>
