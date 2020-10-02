@@ -297,10 +297,6 @@ class MarFSConfig(XMLobj):
     Is harder to work with than static
     """
     def __init__(self, config_path=None):
-        # TODO aggregate comments here
-        # insert them into the tree later
-        # they might float or act funny
-        # but thats ok :)
         self.element_tree_root = None
         self.load_config(config_path)
         super().__init__(self.element_tree_root)
@@ -333,10 +329,6 @@ class MarFSConfig(XMLobj):
 
         if not os.path.exists(self.config_path):
             sys.exit("could not find config file")
-
-    def create_config_file(self):
-        # TODO This should be able to go backwards as well
-        pass
 
     def to_xml(self):
         elem = etree.Element("marfs_config", version=self.version)

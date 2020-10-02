@@ -59,7 +59,7 @@ import socket
 import subprocess
 import sys
 import os
-from config.marfsconfig import MarFSConfig
+from config.data_bindings import MarFSConfig
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
