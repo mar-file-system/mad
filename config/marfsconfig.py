@@ -69,7 +69,7 @@ class XMLobj(object):
 
     def get_just_attrs(self):
         things = dir(self)
-        excludes = ["e_name", "elem", "all_hostnames"]
+        excludes = ["e_name", "elem", "all_hostnames", "comments"]
         things = [t for t in things if "__" not in t]
         things = [t for t in things if not callable(
             self.__getattribute__(t))]
@@ -297,6 +297,10 @@ class MarFSConfig(XMLobj):
     Is harder to work with than static
     """
     def __init__(self, config_path=None):
+        # TODO aggregate comments here
+        # insert them into the tree later
+        # they might float or act funny
+        # but thats ok :)
         self.element_tree_root = None
         self.load_config(config_path)
         super().__init__(self.element_tree_root)
@@ -318,7 +322,7 @@ class MarFSConfig(XMLobj):
 
     def get_config_path(self, config_path):
         if config_path:
-            print("CONFIG: ", config_path)
+            print("CONFIG:", config_path)
             self.config_path = config_path
         else:
             config_path = os.environ.get("MARFSCONFIGRC")
@@ -352,6 +356,7 @@ class MarFSConfig(XMLobj):
             xml,
             pretty_print=True,
             xml_declaration=True,
+            with_comments=True,
             encoding="utf-8").decode("utf-8")
         )
         fp.close()
@@ -382,3 +387,4 @@ class ConfigTool(object):
 
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
+    mcfg.write_config("testout.xml")
