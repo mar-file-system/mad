@@ -354,29 +354,6 @@ class MarFSConfig(XMLobj):
         fp.close()
 
 
-class ConfigTool(object):
-    """
-    Used to manipulate config file
-    Most tools that add to the config file can't be done yet
-    Once config struct is final that can be done
-    """
-    # TODO need to do this
-    def __init__(self):
-        pass
-
-    def new_repo(self, setup=False):
-        """
-        Add a repo to the config file
-        """
-        pass
-
-    def new_namespace(self, setup=False):
-        """
-        Add a namespace to the config file
-        """
-        pass
-
-
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
     mcfg.write_config("testout.xml")
