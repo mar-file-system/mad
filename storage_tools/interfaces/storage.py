@@ -69,7 +69,7 @@ class StorageInterface(NodeBase):
         self.load_config_data()
 
     def _trick_valid_host(self):
-        self.fqdn = self.config.storage_nodes[0].hostname
+        self.fqdn = self.config.hosts.storage_nodes[0].hostname
         self.valid = self.valid_host()
         self.load_config_data()
 
@@ -81,7 +81,7 @@ class StorageInterface(NodeBase):
         hostnames = [self.fqdn, self.hostname]
         if self.valid:
             for hostname in hostnames:
-                for host in self.config.storage_nodes:
+                for host in self.config.hosts.storage_nodes:
                     if host.hostname == hostname:
                         self.pod_num = host.pod
                         self.block_num = host.block
@@ -89,9 +89,10 @@ class StorageInterface(NodeBase):
                     break
 
     def create_pod_block_cap_scatter(self):
-        scatter_size = int(self.working_repo.dal.scatter_width) + 1
-        scatter_t = self.working_repo.host.split("/")[-1].replace("%d", "%s")
-        caps = self.get_pod_block_caps(self.config.storage_top)
+        scatter_size = int(self.working_repo.data.distribution.scatters) + 1
+        scatter_t = self.working_repo.data.dal.dir_template.split("/")[-1]
+        scatter_t.replace("%d", "%s")
+        caps = self.get_pod_block_caps(self.working_repo.data.storage_top)
 
         for pbc_path in caps:
             for i in range(scatter_size):
@@ -268,7 +269,7 @@ class ZFSInterface(StorageInterface):
             pool_name = pools[0][0]
 
         cmd = f"zfs create {pool_name}/nfs " + \
-            f"-o mountpoint={self.config.storage_top}"
+            f"-o mountpoint={self.working_repo.data.storage_top}"
         self.run(cmd)
 
     def make_all_datastores(self, datastore_name="datastore"):
@@ -301,7 +302,7 @@ class ZFSInterface(StorageInterface):
         caps = range(int(self.working_repo.dal.caps))
         for datastore, cap in zip(datastores, caps):
             pbc_path = "/".join([
-                f"{self.config.storage_top}",
+                f"{self.working_repo.data.storage_top}",
                 f"{self.working_repo.name}",
                 f"pod{self.pod_num}",
                 f"block{self.block_num}",

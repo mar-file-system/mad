@@ -1,8 +1,6 @@
 <?xml version = "1.0" encoding = "UTF-8" ?>
 
 <marfs_config version="2.0">
-
-    <!-- Mount Point -->
     <mnt_top>/campaign</mnt_top>
 
     <!-- Host Definitions -->
@@ -73,38 +71,34 @@
     <!-- REPOS -->
     <repo name="MC10+2">
         <data>
-            <storage_top>/zfs/exports</storage_top> <!-- This might belong somewhere else -->
+            <storage_top>/zfs/exports</storage_top> 
+            <!-- This might belong somewhere else -->
             <!-- Object Erasure -->
             <protection>
                 <N>10</N>
                 <E>2</E>
                 <BSZ>1048576</BSZ>
             </protection>
-
             <!-- Packed Objects -->
             <packing enabled="yes">
-                <max_files>4096<max_files>
+                <max_files>4096</max_files>
             </packing>
-
             <!-- Chunked Objects -->
             <chunking enabled="yes">
-                <max_size>1073741824<max_size>
+                <max_size>1073741824</max_size>
             </chunking>
-
             <!-- Object Distribution -->
             <distribution>
                 <pods>1</pods>
                 <blocks>12</blocks>
                 <caps>4</caps>
-                <scatters>4096<scatters>
+                <scatters>4096</scatters>
             </distribution>
-
             <!-- I/O Pattern -->
             <io>
                 <read_size>5248000</read_size>
                 <write_size>5248000</write_size>
             </io>
-
             <!-- DAL Definition -->
             <DAL type="posix">
                 <!-- Tree Structure for Objects -->
@@ -116,28 +110,101 @@
 
         <metadata>
             <!-- All Namespaces -->
-            <namespaces>
-                <ns name="ATCC6-0">
-                    <quota>
-                        <files></files>
-                        <data>549755813888000</data>
-                    </quota>
-                    <perms>
-                        <interactive>RM,WM,RD</interactive>
-                        <batch>RM,WM,RD,WD</batch>
-                    </perms>
-                </ns>
-                <ns name="space-with-literal-brackets\[in-name\]">
-                    <quota>
-                        <files>1024</files>
-                        <data>549755813888000</data>
-                    </quota>
-                    <perms>
-                        <interactive>RM,WM,RD</interactive>
-                        <batch>RM,WM,RD,WD</batch>
-                    </perms>
-                </ns>
-            </namespaces>
+            <ns name="ATCC6-0">
+                <quota>
+                    <files>0</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
+            <ns name="space-with-literal-brackets\[in-name\]">
+                <quota>
+                    <files>1024</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
+
+            <!-- Data On Metadata -->
+            <direct read="yes" write="no"/>
+
+            <!-- MDAL Definition -->
+            <MDAL type="posix">
+                <!-- Root of Namespace Tree -->
+                <ns_root>/gpfs/marfs</ns_root>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/gpfs</security_root>
+            </MDAL>
+        </metadata>
+    </repo>
+
+    <repo name="MC3+1">
+        <data>
+            <storage_top>/zfs/exports</storage_top> 
+            <!-- This might belong somewhere else -->
+            <!-- Object Erasure -->
+            <protection>
+                <N>3</N>
+                <E>1</E>
+                <BSZ>1048576</BSZ>
+            </protection>
+            <!-- Packed Objects -->
+            <packing enabled="yes">
+                <max_files>4096</max_files>
+            </packing>
+            <!-- Chunked Objects -->
+            <chunking enabled="yes">
+                <max_size>1073741824</max_size>
+            </chunking>
+            <!-- Object Distribution -->
+            <distribution>
+                <pods>1</pods>
+                <blocks>12</blocks>
+                <caps>4</caps>
+                <scatters>4096</scatters>
+            </distribution>
+            <!-- I/O Pattern -->
+            <io>
+                <read_size>5248000</read_size>
+                <write_size>5248000</write_size>
+            </io>
+            <!-- DAL Definition -->
+            <DAL type="posix">
+                <!-- Tree Structure for Objects -->
+                <dir_template>/gpfs/mc/repo3+1/pod%d/block%s/cap%d/scatter%d</dir_template>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/gpfs</security_root>
+            </DAL>
+        </data>
+
+        <metadata>
+            <!-- All Namespaces -->
+            <ns name="testing">
+                <quota>
+                    <files>0</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
+            <ns name="alsote">
+                <quota>
+                    <files>1024</files>
+                    <data>549755813888000</data>
+                </quota>
+                <perms>
+                    <interactive>RM,WM,RD</interactive>
+                    <batch>RM,WM,RD,WD</batch>
+                </perms>
+            </ns>
 
             <!-- Data On Metadata -->
             <direct read="yes" write="no"/>

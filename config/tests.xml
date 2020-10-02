@@ -1,59 +1,90 @@
 <?xml version = "1.0" encoding = "UTF-8" ?>
 
-<config>
-    <name>rgoff-test</name>
-    <version>1.10</version>
-    <mnt_top>/tmp/campaign</mnt_top>
-    <mdfs_top>/tmp/marfs/metadata</mdfs_top>
-    <storage_top>/tmp/marfs/storage</storage_top>
+<marfs_config version="2.0">
 
-    <repo>
-        <name>single</name>
-        <host>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</host>
-        <host_offset>0</host_offset>
-        <host_count>1</host_count>
-        <update_in_place>no</update_in_place>
-        <ssl>no</ssl>
-        <access_method>SEMI_DIRECT</access_method>
-        <chunk_size>1073741824</chunk_size>
-        <max_pack_file_count>-1</max_pack_file_count>
-        <min_pack_file_count>10</min_pack_file_count>
-        <max_pack_file_size>104857600</max_pack_file_size>
-        <min_pack_file_size>1</min_pack_file_size>
-        <latency>10000</latency>
-        <timing_flags> NONE </timing_flags>
-        <dal>
-            <type>MC</type>
-            <n> 3 </n>
-            <e> 1 </e>
-            <pods> 1 </pods>
-            <blocks> 4 </blocks>
-            <caps> 4 </caps>
-            <scatter_width> 1024 </scatter_width>
-            <degraded_log_dir> /tmp/marfs/mc-logs/degraded </degraded_log_dir>
-        </dal>
+    <!-- Mount Point -->
+    <mnt_top>/campaign</mnt_top>
 
-        <namespace>
-            <id>0</id>
-            <name>rgoff_namespace</name>
-            <mnt_path>/nfs</mnt_path>
-            <bperms>RM,WM,RD,WD,TD,UD</bperms>
-            <iperms>RM,WM,RD,WD,TD,UD</iperms>
-            <min_size>0</min_size>
-            <max_size>-1</max_size>
-            <quota_space>-1</quota_space>
-            <quota_names>-1</quota_names>
-        </namespace>
+    <!-- Host Definitions -->
+    <hosts>
+        <storage_node hostname="localhost">
+            <pod>0</pod>
+            <block>0</block>
+        </storage_node>      
+        <batch_node hostname="localhost" />
+        <metadata_node hostname="localhost" />        
+        <interactive_node hostname="localhost" />
+    </hosts>
+
+    <!-- REPOS -->
+    <repo name="single">
+        <data>
+            <storage_top>/tmp/marfs/storage</storage_top> <!-- This might belong somewhere else -->
+            <!-- Object Erasure -->
+            <protection>
+                <N>3</N>
+                <E>1</E>
+                <BSZ>1048576</BSZ>
+            </protection>
+
+            <!-- Packed Objects -->
+            <packing enabled="yes">
+                <max_files>4096</max_files>
+            </packing>
+
+            <!-- Chunked Objects -->
+            <chunking enabled="yes">
+                <max_size>1073741824</max_size>
+            </chunking>
+
+            <!-- Object Distribution -->
+            <distribution>
+                <pods>1</pods>
+                <blocks>4</blocks>
+                <caps>4</caps>
+                <scatters>1024</scatters>
+            </distribution>
+
+            <!-- I/O Pattern -->
+            <io>
+                <read_size>5248000</read_size>
+                <write_size>5248000</write_size>
+            </io>
+
+            <!-- DAL Definition -->
+            <DAL type="posix">
+                <!-- Tree Structure for Objects -->
+                <dir_template>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</dir_template>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/tmp/marfs</security_root>
+            </DAL>
+        </data>
+
+        <metadata>
+            <!-- All Namespaces -->
+            <namespaces>
+                <ns name="unit_test_ns">
+                    <quota>
+                        <files>0</files>
+                        <data>549755813888000</data>
+                    </quota>
+                    <perms>
+                        <interactive>RM,WM,RD</interactive>
+                        <batch>RM,WM,RD,WD</batch>
+                    </perms>
+                </ns>
+            </namespaces>
+
+            <!-- Data On Metadata -->
+            <direct read="yes" write="no"/>
+
+            <!-- MDAL Definition -->
+            <MDAL type="posix">
+                <!-- Root of Namespace Tree -->
+                <ns_root>/tmp/marfs/metadata</ns_root>
+                <!-- Restricted Directory (optional) -->
+                <security_root>/tmp/marfs</security_root>
+            </MDAL>
+        </metadata>
     </repo>
-
-    <storage_node>
-        <hostname>localhost</hostname>
-        <pod>0</pod>
-        <block>0</block>
-    </storage_node>
-    
-    <fta_node>
-        <hostname>localhost</hostname>
-    </fta_node>
-    
-</config>
+</marfs_config>

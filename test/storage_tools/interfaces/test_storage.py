@@ -42,7 +42,7 @@ class TestStorageInterface:
         self, marfs_config, working_repo, interface_type
     ):
         i = self.get_interface(marfs_config, working_repo, interface_type)
-        cap_paths = i.get_pod_block_caps(i.config.storage_top)
+        cap_paths = i.get_pod_block_caps(i.working_repo.data.storage_top)
         for path in cap_paths:
             assert not os.path.isdir(path)
         i.create_pod_block_cap_scatter()

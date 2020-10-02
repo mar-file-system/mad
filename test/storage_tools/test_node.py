@@ -48,6 +48,6 @@ class TestNodeBase:
         n.pod_num = 999
         n.block_num = 999
         caps_paths = n.get_pod_block_caps("/var/tmp")
-        for cap in range(int(n.working_repo.dal.caps)):
+        for cap in range(int(n.working_repo.data.distribution.caps)):
             assert f"/var/tmp/{n.working_repo.name}/pod{n.pod_num}/" + \
                 f"block{n.block_num}/cap{cap}" in caps_paths

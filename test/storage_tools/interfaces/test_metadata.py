@@ -43,15 +43,16 @@ class TestMetadataInterface:
     ):
         i = self.get_interface(marfs_config, working_repo, interface_type)
         i.create_pod_block_caps()
-        pods = range(int(i.working_repo.dal.pods))
-        blocks = range(int(i.working_repo.dal.blocks))
-
+        pods = range(int(i.working_repo.data.distribution.pods))
+        blocks = range(int(i.working_repo.data.distribution.blocks))
+        ns_root = i.working_repo.metadata.mdal.ns_root
         for p in pods:
             i.pod_num = p
             for b in blocks:
                 i.block_num = b
-                caps = i.get_pod_block_caps(i.config.mdfs_top)
-                assert len(caps) == int(i.working_repo.dal.caps)
+                caps = i.get_pod_block_caps(ns_root)
+                assert len(caps) == int(
+                    i.working_repo.data.distribution.caps)
                 for cap in caps:
                     assert os.path.isdir(cap)
                     shutil.rmtree(cap)

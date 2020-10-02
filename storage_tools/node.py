@@ -59,7 +59,7 @@ import socket
 import subprocess
 import sys
 import os
-from config.marfsconfig import LazyConfig
+from config.data_bindings import MarFSConfig
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -71,7 +71,7 @@ class NodeBase(object):
         The NodeBase holds common methods between all storage and metadata
         nodes this helps keep configuration generic across all nodes
         """
-        self.config = LazyConfig(marfs_config)
+        self.config = MarFSConfig(marfs_config)
         self.fqdn = socket.getfqdn()
         self.plist = []
         self.pod_num = None
@@ -95,9 +95,8 @@ class NodeBase(object):
         """
         found = False
         hostnames = [self.fqdn, self.hostname]
-        hosts = [host.hostname for host in self.config.all_hosts]
         for hostname in hostnames:
-            if hostname in hosts:
+            if hostname in self.config.hosts.all_hostnames:
                 found = True
 
         return found
@@ -126,7 +125,7 @@ class NodeBase(object):
         Creates a list of path strings underneath top argument
         """
         dirs = []
-        for cap in range(int(self.working_repo.dal.caps)):
+        for cap in range(int(self.working_repo.data.distribution.caps)):
             pbc_path = "/".join([
                 f"{top}",
                 f"{self.working_repo.name}",
@@ -148,19 +147,19 @@ class NodeBase(object):
                 capture_output=get_output,
                 timeout=timeout
             )
-        except:
+        except TypeError:
             if get_output:
                 p = subprocess.run(
                     cmd.split(),
-                    stdout = subprocess.PIPE,
-                    stderr = subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     timeout=timeout
-               )
+                )
             else:
                 p = subprocess.run(
                     cmd.split(),
                     timeout=timeout
-               )
-            
+                )
+
         self.plist.append(p)
         self.last_command = p
