@@ -60,9 +60,27 @@ class TestXMLobj:
         shutil.rmtree(temp)
 
 
+@pytest.mark.basic
 class TestMarFSConfig:
-    pass
+    def test_load_config(self, marfs_config):
+        cfg = db.MarFSConfig(marfs_config)
+        assert cfg
 
+    @pytest.mark.xfail
+    def test_load_config_fail(self, marfs_config):
+        temp = tempfile.mkdtemp(dir="/tmp")
+        tempf = f"{temp}/not_xml.txt"
+        with open(tempf, "w") as fp:
+            fp.write("not xml data\n")
+        cfg = db.MarFSConfig(tempf)
+        cfg.ensure_no_none()
 
-class TestHosts:
-    pass
+    # Not using the conversion back to XML right now
+    # so not testing these
+    @pytest.mark.skip
+    def test_to_xml(self):
+        assert True
+
+    @pytest.mark.skip
+    def test_write_config(self):
+        assert True
