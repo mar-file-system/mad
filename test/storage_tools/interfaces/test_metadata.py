@@ -58,8 +58,9 @@ class TestMetadataInterface:
                     shutil.rmtree(cap)
 
 
-@pytest.mark.cluster
+@pytest.mark.skip
 class TestGPFSInterface:
-    # TODO start making this work
+    # TODO The only methods here amount to making directories
+    # So they will only be tested in a deployment test
     def get_interface(self, marfs_config, working_repo):
         return mi.GPFSInterface(marfs_config, working_repo)

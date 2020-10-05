@@ -230,7 +230,11 @@ class ZFSInterface(StorageInterface):
                 sys.exit(f"{mount_path} not empty")
         self.run(cmd)
 
-    def get_datastores(self):
+    def unmount_datastore(self, datastore):
+        cmd = f"zfs set mountpoint=none {datastore}"
+        self.run(cmd)
+
+    def get_datastores(self, datastore_name="datastore"):
         """
         similar to get pools
         Should zfs list and pick out datastores
@@ -247,6 +251,7 @@ class ZFSInterface(StorageInterface):
             data = [item for item in data if "/" in item[0]
                     and "nfs" not in item[0]]
             data = [item for item in data if f"jbod{self.jbod}" in item[0]]
+            data = [item for item in data if datastore_name in item[0]]
             if data:
                 return data
             else:
@@ -254,10 +259,6 @@ class ZFSInterface(StorageInterface):
         else:
             return None
         pass
-
-    def unmount_datastore(self, datastore):
-        cmd = f"zfs set mountpoint=none {datastore}"
-        self.run(cmd)
 
     def make_zfs_nfs(self, pool_name=None):
         """
@@ -299,7 +300,7 @@ class ZFSInterface(StorageInterface):
             name = datastore.split("/")[-1]
             if name == datastore_name:
                 datastores.append(datastore)
-        caps = range(int(self.working_repo.dal.caps))
+        caps = range(int(self.working_repo.data.distribution.caps))
         for datastore, cap in zip(datastores, caps):
             pbc_path = "/".join([
                 f"{self.working_repo.data.storage_top}",
@@ -328,10 +329,10 @@ class ZFSInterface(StorageInterface):
         Perform some checks to see if ZFS is working and ready for setup
         """
         # Check if storage-start service succeeded
-        self.run("systemctl staus storage-start")
+        self.run("systemctl status storage-start")
         output = self.last_command.stdout.decode("utf-8")
         if "SUCCESS" not in output:
-            print("storage-start service did not succeed")
+            print(output, "storage-start service did not succeed")
             return False
         # check is zfs kernel module is loaded
         self.run("lsmod")
