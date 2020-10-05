@@ -6,8 +6,6 @@ import pytest
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-# TODO this needs to be fixed to work again
-
 @pytest.fixture()
 def working_repo(pytestconfig):
     return pytestconfig.getoption("working_repo")
@@ -18,12 +16,16 @@ def marfs_config(pytestconfig):
     return pytestconfig.getoption("marfs_config")
 
 
-@pytest.mark.skip
+@pytest.mark.zfsdeployment
 class TestStorageDeployment:
 
     def test_marfs_config_set(self, marfs_config):
         # TODO this needs to be updated and fixed
         assert os.path.exists(marfs_config)
+
+    def test_check_zfs_ready(self, marfs_config, working_repo):
+        i = self.get_storage_node_tools(marfs_config)
+        assert i.check_zfs_ready()
 
     def test_enough_scatters(self, marfs_config, working_repo):
         SNT = self.get_storage_node_tools(marfs_config)
@@ -51,7 +53,7 @@ class TestStorageDeployment:
 
     def test_check_zfs_nfs(self, marfs_config):
         SNT = self.get_storage_node_tools(marfs_config)
-        cmd = f"zfs list {SNT.config.storage_top}"
+        cmd = f"zfs list {SNT.working_repo.data.storage_top}"
         SNT.run(cmd)
         assert SNT.last_command.returncode == 0
 

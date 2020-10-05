@@ -230,6 +230,10 @@ class ZFSInterface(StorageInterface):
                 sys.exit(f"{mount_path} not empty")
         self.run(cmd)
 
+    def unmount_datastore(self, datastore):
+        cmd = f"zfs set mountpoint=none {datastore}"
+        self.run(cmd)
+
     def get_datastores(self):
         """
         similar to get pools
@@ -254,10 +258,6 @@ class ZFSInterface(StorageInterface):
         else:
             return None
         pass
-
-    def unmount_datastore(self, datastore):
-        cmd = f"zfs set mountpoint=none {datastore}"
-        self.run(cmd)
 
     def make_zfs_nfs(self, pool_name=None):
         """
