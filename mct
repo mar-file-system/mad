@@ -59,132 +59,226 @@
 import argparse
 import sys
 import os
-from storage_tools.interfaces import storage as sti
-from storage_tools.interfaces import metadata as mdi
+from lxml import etree
+
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+def get_tree_root(config_path):
+    with open(config_path, "r") as fp:
+        data = etree.parse(fp)
 
-def get_namespace(element_tree, repo_name):
+    return data.getroot()
+
+def write_xml(config_path, tree):
+    with open(config_path, "w") as fp:
+        fp.write(etree.tostring(tree).decode("utf-8"))
+
+def get_namespace(args):
     pass
 
 
-def update_namespace(namespace_name):
-    pass
+def modns(args):
+    data = get_tree_root(args.marfs_config)
+    for repo in data.iter("repo"):
+        if repo.attrib["name"] == args.repo_name:
+            md = repo.find("metadata")
+            for ns in md.iter("ns"):
+                if ns.attrib["name"] == args.N:
+                    if args.n:
+                        ns.attrib["name"] = args.n
+                    q = ns.find("quota")
+                    p = ns.find("perms")
+                    if args.f:
+                        q.find("files").text = args.f
+                    if args.d:
+                        q.find("data").text = args.d
+                    if args.ip:
+                        p.find("interactive").text = args.ip
+                    if args.bp:
+                        p.find("batch").text = args.bp
+    write_xml(args.marfs_config, data)
+
+
+
+
+
+
+            # for ns in repo.("metadata")[0].iter("ns"):
+            #     if ns.attrib["name"] == args.n:
+            #         if args.f >= 0:
+            #             ns.xpath.quota[0].xpath("files")[0] = args.f
+            #         ns.xpath.quota[0].xpath("data")[0] = args.f
 
 
 def new_namespace(namespace_name, quota_files, quota_data, iperms, bperms):
     pass
 
 
+def delete_namespace(namespace_name):
+    pass
+
+
 def get_repo(element_tree):
     pass
 
+def testing():
+    pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    # deploy_zfs
-    parser_deploy_zfs = subparsers.add_parser(
-        'deploy_zfs',
-        prog="deploy_zfs",
-        help="Deploy a MarFS storage cluster to ZFS"
+    # add new namespace
+    parser_new_namespace = subparsers.add_parser(
+        'addns',
+        prog="addns",
+        help="Create a new namespace",
     )
-    parser_deploy_zfs.add_argument(
+    parser_new_namespace.add_argument(
         'marfs_config',
         metavar='MARFSCONFIGRC',
         type=str,
-        help='Path to MarFS Configuration File'
+        help='Path to MarFS Configuration File',
     )
-    parser_deploy_zfs.add_argument(
+    parser_new_namespace.add_argument(
         'repo_name',
         metavar='REPOSITORY_NAME',
         type=str,
-        help='Repository Name to deploy'
+        help='Repository Name to deploy',
     )
-    parser_deploy_zfs.add_argument(
-        '--datastore_name',
+    parser_new_namespace.add_argument(
+        '-n',
         type=str,
-        metavar="",
-        help="Name of datastore to deploy",
-        default="datastore"
+        metavar="NAME",
+        help="Name of namespace",
+        required=True
     )
-    parser_deploy_zfs.add_argument(
-        '--jbod',
+    parser_new_namespace.add_argument(
+        '-f',
+        type=int,
+        metavar="FILES",
+        help="Number of files in quota",
+        default=-1
+    )
+    parser_new_namespace.add_argument(
+        '-d',
+        type=int,
+        metavar="DATA",
+        help="Data limit in bytes",
+        default=10740000000
+    )
+    parser_new_namespace.add_argument(
+        '-ip',
         type=str,
-        metavar="",
-        help="JBOD number",
-        default="1"
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default="RM,WM,RD,UD,TD"
     )
-    parser_deploy_zfs.set_defaults(func=deploy_zfs)
-    # Deploy GPFS
-    parser_deploy_gpfs = subparsers.add_parser(
-        'deploy_gpfs',
-        prog="deploy_gpfs",
-        help="Deploy MarFS to GPFS"
-    )
-    parser_deploy_gpfs.add_argument(
-        'marfs_config',
-        metavar='MARFSCONFIGRC',
+    parser_new_namespace.add_argument(
+        '-bp',
         type=str,
-        help='Path to MarFS Configuration File'
+        metavar="BPERMS",
+        help="Batch permissions",
+        default="RM,WM,RD,WD,UD,TD"
     )
-    parser_deploy_gpfs.add_argument(
-        'repo_name',
-        metavar='REPOSITORY_NAME',
-        type=str,
-        help='Repository Name to deploy'
-    )
-    parser_deploy_gpfs.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEV',
-        type=str,
-        help='Path to GPFS device'
-    )
-    parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
+    parser_new_namespace.set_defaults(func=new_namespace)
 
-    # Setup ZFS
-    parser_setup_zfs = subparsers.add_parser(
-        'setup_zfs',
-        prog="setup_zfs",
-        help="Setup ZFS zpools for MarFS"
+    # update namespace
+    parser_mod_namespace = subparsers.add_parser(
+        'modns',
+        prog="modns",
+        help="Modify a namespace",
     )
-    parser_setup_zfs.add_argument(
+    parser_mod_namespace.add_argument(
         'marfs_config',
         metavar='MARFSCONFIGRC',
         type=str,
-        help='Path to MarFS Configuration File'
+        help='Path to MarFS Configuration File',
     )
-    parser_setup_zfs.add_argument(
+    parser_mod_namespace.add_argument(
         'repo_name',
         metavar='REPOSITORY_NAME',
         type=str,
-        help='Repository Name to deploy'
+        help='Repository Name to deploy',
     )
-    parser_setup_zfs.add_argument(
-        '--datastore_name',
+    parser_mod_namespace.add_argument(
+        'N',
         type=str,
-        metavar="",
-        help="Name of datastore to deploy",
-        default="datastore"
+        metavar="NAME",
+        help="Name of namespace"
     )
-    parser_setup_zfs.add_argument(
-        '--jbod',
+    parser_mod_namespace.add_argument(
+        '-n',
         type=str,
-        metavar="",
-        help="JBOD number",
-        default="1"
+        metavar="NEWNAME",
+        help="Name of namespace"
     )
-    parser_setup_zfs.add_argument(
-        '--force_zpools',
+    parser_mod_namespace.add_argument(
+        '-f',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-d',
+        type=str,
+        metavar="DATA",
+        help="Data limit in bytes",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-ip',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-bp',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default=None
+    )
+    parser_mod_namespace.set_defaults(func=modns)
+
+    # update namespace
+    parser_del_namespace = subparsers.add_parser(
+        'delns',
+        prog="delns",
+        help="Delete a namespace",
+    )
+    parser_del_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_del_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_del_namespace.add_argument(
+        '-n',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+        required=True
+    )
+    parser_del_namespace.add_argument(
+        '-f',
         type=bool,
-        metavar="",
-        help="Force zpool creation",
-        default=False
+        metavar="FORCE",
+        help="Forces delete of namespace with no prompt",
+        required=True
     )
-    parser_setup_zfs.set_defaults(func=setup_zfs)
+    parser_del_namespace.set_defaults(func=delete_namespace)
 
+    
     if len(sys.argv) < 2:
         parser.print_usage()
         sys.exit(1)
