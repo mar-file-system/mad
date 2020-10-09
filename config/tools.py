@@ -19,10 +19,11 @@ def get_repo(element_tree):
     pass
 
 def testing():
-    with open("test_file.xml", "r") as fp:
-        data = etree.parse(fp)
+from lxml import etree
+with open("test_file_out.xml", "r") as fp:
+    data = etree.parse(fp)
 
-    data = data.getroot()
+data = data.getroot()
 
     for item in data:
         if item.tag == "repo":

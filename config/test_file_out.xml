@@ -1,156 +1,147 @@
+<?xml version='1.0' encoding='utf-8'?>
 <marfs_config version="2.0">
-
-    <!-- Mount Point -->
-    <mnt_top>/campaign</mnt_top>
-
-    <!-- Host Definitions -->
-    <hosts>
-        <storage_node hostname="localhost">
-            <pod>0</pod>
-            <block>0</block>
-        </storage_node>      
-        <batch_node hostname="localhost"/>
-        <metadata_node hostname="localhost"/>        
-        <interactive_node hostname="localhost"/>
-    </hosts>
-
-    <!-- REPOS -->
-    <repo name="testchange">
-        <data>
-            <storage_top>/tmp/marfs/storage</storage_top> <!-- This might belong somewhere else -->
-            <!-- Object Erasure -->
-            <protection>
-                <N>3</N>
-                <E>1</E>
-                <BSZ>1048576</BSZ>
-            </protection>
-
-            <!-- Packed Objects -->
-            <packing enabled="yes">
-                <max_files>4096</max_files>
-            </packing>
-
-            <!-- Chunked Objects -->
-            <chunking enabled="yes">
-                <max_size>1073741824</max_size>
-            </chunking>
-
-            <!-- Object Distribution -->
-            <distribution>
-                <pods>1</pods>
-                <blocks>4</blocks>
-                <caps>4</caps>
-                <scatters>1024</scatters>
-            </distribution>
-
-            <!-- I/O Pattern -->
-            <io>
-                <read_size>5248000</read_size>
-                <write_size>5248000</write_size>
-            </io>
-
-            <!-- DAL Definition -->
-            <DAL type="posix">
-                <!-- Tree Structure for Objects -->
-                <dir_template>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</dir_template>
-                <!-- Restricted Directory (optional) -->
-                <security_root>/tmp/marfs</security_root>
-            </DAL>
-        </data>
-
-        <metadata>
-            <!-- All Namespaces -->
-            <ns name="testns">
-                <quota>
-                    <files>100</files>
-                    <data>549755813888001</data>
-                </quota>
-                <perms>
-                    <interactive>RM,WM</interactive>
-                    <batch>RM,WM,RD,WD</batch>
-                </perms>
-            </ns>
-
-            <!-- Data On Metadata -->
-            <direct read="yes" write="no"/>
-
-            <!-- MDAL Definition -->
-            <MDAL type="posix">
-                <!-- Root of Namespace Tree -->
-                <ns_root>/tmp/marfs/metadata</ns_root>
-                <!-- Restricted Directory (optional) -->
-                <security_root>/tmp/marfs</security_root>
-            </MDAL>
-        </metadata>
-    </repo>
-    <repo name="testtwo">
-        <data>
-            <storage_top>/tmp/marfs/storage</storage_top> <!-- This might belong somewhere else -->
-            <!-- Object Erasure -->
-            <protection>
-                <N>3</N>
-                <E>1</E>
-                <BSZ>1048576</BSZ>
-            </protection>
-
-            <!-- Packed Objects -->
-            <packing enabled="yes">
-                <max_files>4096</max_files>
-            </packing>
-
-            <!-- Chunked Objects -->
-            <chunking enabled="yes">
-                <max_size>1073741824</max_size>
-            </chunking>
-
-            <!-- Object Distribution -->
-            <distribution>
-                <pods>1</pods>
-                <blocks>4</blocks>
-                <caps>4</caps>
-                <scatters>1024</scatters>
-            </distribution>
-
-            <!-- I/O Pattern -->
-            <io>
-                <read_size>5248000</read_size>
-                <write_size>5248000</write_size>
-            </io>
-
-            <!-- DAL Definition -->
-            <DAL type="posix">
-                <!-- Tree Structure for Objects -->
-                <dir_template>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</dir_template>
-                <!-- Restricted Directory (optional) -->
-                <security_root>/tmp/marfs</security_root>
-            </DAL>
-        </data>
-
-        <metadata>
-            <!-- All Namespaces -->
-            <namespaces>
-                <ns name="unit_test_ns">
-                    <quota>
-                        <files>0</files>
-                        <data>549755813888000</data>
-                    </quota>
-                    <perms>
-                        <interactive>RM,WM,RD</interactive>
-                        <batch>RM,WM,RD,WD</batch>
-                    </perms>
-                </ns>
-            </namespaces>
-
-            <!-- Data On Metadata -->
-            <direct read="yes" write="no"/>
-
-            <!-- MDAL Definition -->
-            <MDAL type="posix">
-                <!-- Root of Namespace Tree -->
-                <ns_root>/tmp/marfs/metadata</ns_root>
-                <!-- Restricted Directory (optional) -->
-                <security_root>/tmp/marfs</security_root>
-            </MDAL>
-        </metadata>
-    </repo>
+  <!-- Mount Point -->
+  <mnt_top>/campaign</mnt_top>
+  <!-- Host Definitions -->
+  <hosts>
+    <storage_node hostname="localhost">
+      <pod>0</pod>
+      <block>0</block>
+    </storage_node>
+    <batch_node hostname="localhost"/>
+    <metadata_node hostname="localhost"/>
+    <interactive_node hostname="localhost"/>
+  </hosts>
+  <!-- REPOS -->
+  <repo name="testchange">
+    <data>
+      <storage_top>/tmp/marfs/storage</storage_top>
+      <!-- This might belong somewhere else -->
+      <!-- Object Erasure -->
+      <protection>
+        <N>3</N>
+        <E>1</E>
+        <BSZ>1048576</BSZ>
+      </protection>
+      <!-- Packed Objects -->
+      <packing enabled="yes">
+        <max_files>4096</max_files>
+      </packing>
+      <!-- Chunked Objects -->
+      <chunking enabled="yes">
+        <max_size>1073741824</max_size>
+      </chunking>
+      <!-- Object Distribution -->
+      <distribution>
+        <pods>1</pods>
+        <blocks>4</blocks>
+        <caps>4</caps>
+        <scatters>1024</scatters>
+      </distribution>
+      <!-- I/O Pattern -->
+      <io>
+        <read_size>5248000</read_size>
+        <write_size>5248000</write_size>
+      </io>
+      <!-- DAL Definition -->
+      <DAL type="posix">
+        <!-- Tree Structure for Objects -->
+        <dir_template>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</dir_template>
+        <!-- Restricted Directory (optional) -->
+        <security_root>/tmp/marfs</security_root>
+      </DAL>
+    </data>
+    <metadata>
+      <!-- All Namespaces -->
+      <!-- Data On Metadata -->
+      <direct read="yes" write="no"/>
+      <!-- MDAL Definition -->
+      <MDAL type="posix">
+        <!-- Root of Namespace Tree -->
+        <ns_root>/tmp/marfs/metadata</ns_root>
+        <!-- Restricted Directory (optional) -->
+        <security_root>/tmp/marfs</security_root>
+      </MDAL>
+      <ns name="testns">
+        <quota>
+          <files>-1</files>
+          <data>10740000000</data>
+        </quota>
+        <perms>
+          <interactive>RM,WM,RD,UD,TD</interactive>
+          <batch>RM,WM,RD,WD,UD,TD</batch>
+        </perms>
+      </ns>
+      <ns name="thanks_interwebs">
+        <quota>
+          <files>10003</files>
+          <data>10101890101</data>
+        </quota>
+        <perms>
+          <interactive>RM,WM,RD,UD,TD</interactive>
+          <batch>RM,WM,RD,WD,UD,TD</batch>
+        </perms>
+      </ns>
+    </metadata>
+  </repo>
+  <repo name="testtwo">
+    <data>
+      <storage_top>/tmp/marfs/storage</storage_top>
+      <!-- This might belong somewhere else -->
+      <!-- Object Erasure -->
+      <protection>
+        <N>3</N>
+        <E>1</E>
+        <BSZ>1048576</BSZ>
+      </protection>
+      <!-- Packed Objects -->
+      <packing enabled="yes">
+        <max_files>4096</max_files>
+      </packing>
+      <!-- Chunked Objects -->
+      <chunking enabled="yes">
+        <max_size>1073741824</max_size>
+      </chunking>
+      <!-- Object Distribution -->
+      <distribution>
+        <pods>1</pods>
+        <blocks>4</blocks>
+        <caps>4</caps>
+        <scatters>1024</scatters>
+      </distribution>
+      <!-- I/O Pattern -->
+      <io>
+        <read_size>5248000</read_size>
+        <write_size>5248000</write_size>
+      </io>
+      <!-- DAL Definition -->
+      <DAL type="posix">
+        <!-- Tree Structure for Objects -->
+        <dir_template>/tmp/marfs/metadata/single/pod%d/block%s/cap%d/scatter%d</dir_template>
+        <!-- Restricted Directory (optional) -->
+        <security_root>/tmp/marfs</security_root>
+      </DAL>
+    </data>
+    <metadata>
+      <!-- All Namespaces -->
+      <ns name="unit_test_ns">
+        <quota>
+          <files>0</files>
+          <data>549755813888000</data>
+        </quota>
+        <perms>
+          <interactive>RM,WM,RD</interactive>
+          <batch>RM,WM,RD,WD</batch>
+        </perms>
+      </ns>
+      <direct read="yes" write="no"/>
+      <!-- MDAL Definition -->
+      <MDAL type="posix">
+        <!-- Root of Namespace Tree -->
+        <ns_root>/tmp/marfs/metadata</ns_root>
+        <!-- Restricted Directory (optional) -->
+        <security_root>/tmp/marfs</security_root>
+      </MDAL>
+    </metadata>
+  </repo>
 </marfs_config>
