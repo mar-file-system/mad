@@ -105,7 +105,7 @@ def addns(args):
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
             md = repo.find("metadata")
-            ns = etree.SubElement(md, "ns", name=args.n)
+            ns = etree.SubElement(md, "ns", name=args.name)
             quota = etree.SubElement(ns, "quota")
             etree.SubElement(quota, "files").text = args.f
             etree.SubElement(quota, "data").text = args.d
@@ -161,11 +161,10 @@ if __name__ == '__main__':
         help='Repository Name to deploy',
     )
     parser_new_namespace.add_argument(
-        '-n',
+        'name',
         type=str,
         metavar="NAME",
         help="Name of namespace",
-        required=True
     )
     parser_new_namespace.add_argument(
         '-f',
