@@ -59,10 +59,118 @@
 import argparse
 import sys
 import os
+import copy
+from lxml import etree
 from storage_tools.interfaces import storage as sti
 from storage_tools.interfaces import metadata as mdi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def check_ns_exists(repo, name):
+    for ns in repo.find("metadata").findall("ns"):
+        if ns.attrib["name"] == name:
+            sys.exit("ERROR namespace name exists already")
+
+
+def check_repo_exists(tree, name):
+    for repo in tree.findall("repo"):
+        if repo.attrib["name"] == name:
+            sys.exit("ERROR: repo name exists already")
+
+
+def get_tree_root(config_path):
+    p = etree.XMLParser(remove_blank_text=True)
+    with open(config_path, "r") as fp:
+        data = etree.parse(fp, parser=p)
+
+    return data.getroot()
+
+
+def write_xml(config_path, tree):
+    with open(config_path, "w") as fp:
+        fp.write(etree.tostring(tree, pretty_print=True,
+                                xml_declaration=True, encoding="utf-8").decode("utf-8"))
+
+
+def modns(args):
+    data = get_tree_root(args.marfs_config)
+    for repo in data.iter("repo"):
+        if repo.attrib["name"] == args.repo_name:
+            md = repo.find("metadata")
+            for ns in md.iter("ns"):
+                if ns.attrib["name"] == args.N:
+                    if args.n:
+                        check_ns_exists(repo, args.n)
+                        ns.attrib["name"] = args.n
+                    q = ns.find("quota")
+                    p = ns.find("perms")
+                    if args.f:
+                        q.find("files").text = args.f
+                    if args.d:
+                        q.find("data").text = args.d
+                    if args.ip:
+                        p.find("interactive").text = args.ip
+                    if args.bp:
+                        p.find("batch").text = args.bp
+
+    write_xml(args.marfs_config, data)
+
+
+def addns(args):
+    data = get_tree_root(args.marfs_config)
+    for repo in data.iter("repo"):
+        if repo.attrib["name"] == args.repo_name:
+            check_ns_exists(repo, args.name)
+            md = repo.find("metadata")
+            ns = etree.SubElement(md, "ns", name=args.name)
+            quota = etree.SubElement(ns, "quota")
+            etree.SubElement(quota, "files").text = args.f
+            etree.SubElement(quota, "data").text = args.d
+            perms = etree.SubElement(ns, "perms")
+            etree.SubElement(perms, "interactive").text = args.ip
+            etree.SubElement(perms, "batch").text = args.bp
+
+    write_xml(args.marfs_config, data)
+
+
+def delete_namespace(args):
+    data = get_tree_root(args.marfs_config)
+    confirmed = False
+    if args.f:
+        confirmed = True
+    else:
+        i = input(f"Confirm delete {args.n}?\n(y/n):")
+        if i.lower() == "y":
+            confirmed = True
+
+    if confirmed:
+        for repo in data.iter("repo"):
+            if repo.attrib["name"] == args.repo_name:
+                md = repo.find("metadata")
+                for ns in md.findall("ns"):
+                    if ns.attrib["name"] == args.n:
+                        md.remove(ns)
+
+        write_xml(args.marfs_config, data)
+
+
+def new_repo(args):
+    data = get_tree_root(args.marfs_config)
+    check_repo_exists(data, args.repo_name)
+    r = data.find("repo")
+    new_r = copy.deepcopy(r)
+    new_r.attrib["name"] = args.repo_name
+    md = new_r.find("metadata")
+    for ns in md.findall("ns"):
+        md.remove(ns)
+    dt_t = new_r.find("data").find("DAL").find("dir_template").text
+    print(dt_t)
+    dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
+    print(dt_t)
+    new_r.find("data").find("DAL").find("dir_template").text = dt_t
+    data.append(new_r)
+    write_xml(args.marfs_config, data)
 
 
 def single_node_example():
@@ -203,6 +311,171 @@ if __name__ == '__main__':
         default=False
     )
     parser_setup_zfs.set_defaults(func=setup_zfs)
+
+    parser_new_namespace = subparsers.add_parser(
+        'addns',
+        prog="addns",
+        help="Create a new namespace",
+    )
+    parser_new_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_new_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_new_namespace.add_argument(
+        'name',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+    )
+    parser_new_namespace.add_argument(
+        '-f',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default="-1",
+    )
+    parser_new_namespace.add_argument(
+        '-d',
+        type=str,
+        metavar="DATA",
+        help="Data limit in bytes",
+        default="10740000000",
+    )
+    parser_new_namespace.add_argument(
+        '-ip',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default="RM,WM,RD,UD,TD",
+    )
+    parser_new_namespace.add_argument(
+        '-bp',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default="RM,WM,RD,WD,UD,TD"
+    )
+    parser_new_namespace.set_defaults(func=addns)
+
+    # update namespace
+    parser_mod_namespace = subparsers.add_parser(
+        'modns',
+        prog="modns",
+        help="Modify a namespace",
+    )
+    parser_mod_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_mod_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_mod_namespace.add_argument(
+        'N',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace"
+    )
+    parser_mod_namespace.add_argument(
+        '-n',
+        type=str,
+        metavar="NEWNAME",
+        help="Name of namespace"
+    )
+    parser_mod_namespace.add_argument(
+        '-f',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-d',
+        type=str,
+        metavar="DATA",
+        help="Data limit in bytes",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-ip',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-bp',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default=None
+    )
+    parser_mod_namespace.set_defaults(func=modns)
+
+    # delete namespace
+    parser_del_namespace = subparsers.add_parser(
+        'delns',
+        prog="delns",
+        help="Delete a namespace",
+    )
+    parser_del_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_del_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_del_namespace.add_argument(
+        '-n',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+        required=True
+    )
+    parser_del_namespace.add_argument(
+        '-f',
+        action='store_true',
+        help="Force delete",
+    )
+    parser_del_namespace.set_defaults(func=delete_namespace)
+
+    # new repo
+    parser_new_repo = subparsers.add_parser(
+        'addrepo',
+        prog="addrepo",
+        help="Add a new repository",
+    )
+    parser_new_repo.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_new_repo.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_new_repo.set_defaults(func=new_repo)
 
     if len(sys.argv) < 2:
         parser.print_usage()
