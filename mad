@@ -66,6 +66,9 @@ from storage_tools.interfaces import metadata as mdi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+def convert_to_bytes(data_quota):
+    return str(1073741824 * data_quota)
+
 def sanity_check_perms(perms):
     valid_perms = ["RD", "WD", "RM", "WM", "UD", "TD"]
     perms = perms.split(",")
@@ -111,9 +114,10 @@ def modns(args):
                         ns.attrib["name"] = args.newname
                     q = ns.find("quota")
                     p = ns.find("perms")
-                    if args.f:
+                    if args.numfiles:
                         q.find("files").text = args.numfiles
-                    if args.d:
+                    if args.data:
+                        args.data = convert_to_bytes(args.data)
                         q.find("data").text = args.data
                     if args.iperms:
                         sanity_check_perms(args.iperms)
@@ -129,6 +133,7 @@ def addns(args):
     data = get_tree_root(args.marfs_config)
     sanity_check_perms(args.bperms)
     sanity_check_perms(args.iperms)
+    args.data = convert_to_bytes(args.data)
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
             check_ns_exists(repo, args.name)
@@ -146,7 +151,7 @@ def addns(args):
         if args.gpfs_device:
             deploy_gpfs(args)
         else:
-            sys.exit("ERROR; namespace not deployed. GPFS device not provided")
+            sys.exit("ERROR; namespace added but not deployed. GPFS device not provided")
 
 
 def delete_namespace(args):
@@ -379,10 +384,10 @@ if __name__ == '__main__':
     parser_new_namespace.add_argument(
         '-d',
         '--data',
-        type=str,
+        type=int,
         metavar="DATA",
         help="Data limit in GiB",
-        default="10740000000",
+        default=10,
     )
     parser_new_namespace.add_argument(
         '-ip',
@@ -449,7 +454,7 @@ if __name__ == '__main__':
     parser_mod_namespace.add_argument(
         '-d',
         '--data',
-        type=str,
+        type=int,
         metavar="DATA",
         help="Data limit in bytes",
         default=None
