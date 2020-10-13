@@ -66,6 +66,12 @@ from storage_tools.interfaces import metadata as mdi
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+def sanity_check_perms(perms):
+    valid_perms = ["RD", "WD", "RM", "WM", "UD", "TD"]
+    perms = perms.split(",")
+    for p in perms:
+        if p not in valid_perms:
+            raise ValueError
 
 def check_ns_exists(repo, name):
     for ns in repo.find("metadata").findall("ns"):
@@ -100,44 +106,55 @@ def modns(args):
             md = repo.find("metadata")
             for ns in md.iter("ns"):
                 if ns.attrib["name"] == args.N:
-                    if args.n:
-                        check_ns_exists(repo, args.n)
-                        ns.attrib["name"] = args.n
+                    if args.newname:
+                        check_ns_exists(repo, args.newname)
+                        ns.attrib["name"] = args.newname
                     q = ns.find("quota")
                     p = ns.find("perms")
                     if args.f:
-                        q.find("files").text = args.f
+                        q.find("files").text = args.numfiles
                     if args.d:
-                        q.find("data").text = args.d
-                    if args.ip:
-                        p.find("interactive").text = args.ip
-                    if args.bp:
-                        p.find("batch").text = args.bp
+                        q.find("data").text = args.data
+                    if args.iperms:
+                        sanity_check_perms(args.iperms)
+                        p.find("interactive").text = args.iperms
+                    if args.bperms:
+                        sanity_check_perms(args.bperms)
+                        p.find("batch").text = args.bperms
 
     write_xml(args.marfs_config, data)
 
 
 def addns(args):
     data = get_tree_root(args.marfs_config)
+    sanity_check_perms(args.bperms)
+    sanity_check_perms(args.iperms)
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
             check_ns_exists(repo, args.name)
             md = repo.find("metadata")
             ns = etree.SubElement(md, "ns", name=args.name)
             quota = etree.SubElement(ns, "quota")
-            etree.SubElement(quota, "files").text = args.f
-            etree.SubElement(quota, "data").text = args.d
+            etree.SubElement(quota, "files").text = args.numfiles
+            etree.SubElement(quota, "data").text = args.data
             perms = etree.SubElement(ns, "perms")
-            etree.SubElement(perms, "interactive").text = args.ip
-            etree.SubElement(perms, "batch").text = args.bp
+            etree.SubElement(perms, "interactive").text = args.iperms
+            etree.SubElement(perms, "batch").text = args.bperms
 
     write_xml(args.marfs_config, data)
+    if not args.nodeploy:
+        if args.gpfs_device:
+            deploy_gpfs(args)
+        else:
+            sys.exit("ERROR; namespace not deployed. GPFS device not provided")
 
 
 def delete_namespace(args):
+    # This function should not perform backend operations
+    # Just remove the namespace from the config
     data = get_tree_root(args.marfs_config)
     confirmed = False
-    if args.f:
+    if args.force:
         confirmed = True
     else:
         i = input(f"Confirm delete {args.n}?\n(y/n):")
@@ -149,7 +166,7 @@ def delete_namespace(args):
             if repo.attrib["name"] == args.repo_name:
                 md = repo.find("metadata")
                 for ns in md.findall("ns"):
-                    if ns.attrib["name"] == args.n:
+                    if ns.attrib["name"] == args.name:
                         md.remove(ns)
 
         write_xml(args.marfs_config, data)
@@ -164,11 +181,14 @@ def new_repo(args):
     md = new_r.find("metadata")
     for ns in md.findall("ns"):
         md.remove(ns)
-    dt_t = new_r.find("data").find("DAL").find("dir_template").text
-    print(dt_t)
-    dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
-    print(dt_t)
-    new_r.find("data").find("DAL").find("dir_template").text = dt_t
+    
+    if args.pod_block_cap:
+        new_r.find("data").find("DAL").find("dir_template").text = args.pod_block_cap
+    else:
+        dt_t = new_r.find("data").find("DAL").find("dir_template").text
+        dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
+        new_r.find("data").find("DAL").find("dir_template").text = dt_t
+        
     data.append(new_r)
     write_xml(args.marfs_config, data)
 
@@ -231,6 +251,7 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_deploy_zfs.add_argument(
+        '-d',
         '--datastore_name',
         type=str,
         metavar="",
@@ -238,6 +259,7 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_deploy_zfs.add_argument(
+        '-j'
         '--jbod',
         type=str,
         metavar="",
@@ -290,6 +312,7 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_setup_zfs.add_argument(
+        '-d',
         '--datastore_name',
         type=str,
         metavar="",
@@ -297,6 +320,7 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_setup_zfs.add_argument(
+        '-j'
         '--jbod',
         type=str,
         metavar="",
@@ -304,6 +328,7 @@ if __name__ == '__main__':
         default="1"
     )
     parser_setup_zfs.add_argument(
+        '-f',
         '--force_zpools',
         type=bool,
         metavar="",
@@ -312,6 +337,7 @@ if __name__ == '__main__':
     )
     parser_setup_zfs.set_defaults(func=setup_zfs)
 
+    # create new namespace
     parser_new_namespace = subparsers.add_parser(
         'addns',
         prog="addns",
@@ -336,7 +362,15 @@ if __name__ == '__main__':
         help="Name of namespace",
     )
     parser_new_namespace.add_argument(
-        '-f',
+        '-gd',
+        '--gpfs_device',
+        type=str,
+        metavar="GPFS_DEVICE",
+        help="Path to GPFS device for new namespace",
+    )
+    parser_new_namespace.add_argument(
+        '-n',
+        '--numfiles',
         type=str,
         metavar="FILES",
         help="Number of files in quota",
@@ -344,13 +378,15 @@ if __name__ == '__main__':
     )
     parser_new_namespace.add_argument(
         '-d',
+        '--data',
         type=str,
         metavar="DATA",
-        help="Data limit in bytes",
+        help="Data limit in GiB",
         default="10740000000",
     )
     parser_new_namespace.add_argument(
         '-ip',
+        '--iperms',
         type=str,
         metavar="IPERMS",
         help="Interactive permissions",
@@ -358,10 +394,16 @@ if __name__ == '__main__':
     )
     parser_new_namespace.add_argument(
         '-bp',
+        '--bperms',
         type=str,
         metavar="BPERMS",
         help="Batch permissions",
         default="RM,WM,RD,WD,UD,TD"
+    )
+    parser_new_namespace.add_argument(
+        '--nodeploy',
+        action='store_true',
+        help="Skip deploying the namespace",
     )
     parser_new_namespace.set_defaults(func=addns)
 
@@ -390,13 +432,15 @@ if __name__ == '__main__':
         help="Name of namespace"
     )
     parser_mod_namespace.add_argument(
-        '-n',
+        '-nn',
+        '--newname',
         type=str,
         metavar="NEWNAME",
         help="Name of namespace"
     )
     parser_mod_namespace.add_argument(
-        '-f',
+        '-n',
+        '--numfiles',
         type=str,
         metavar="FILES",
         help="Number of files in quota",
@@ -404,6 +448,7 @@ if __name__ == '__main__':
     )
     parser_mod_namespace.add_argument(
         '-d',
+        '--data',
         type=str,
         metavar="DATA",
         help="Data limit in bytes",
@@ -411,6 +456,7 @@ if __name__ == '__main__':
     )
     parser_mod_namespace.add_argument(
         '-ip',
+        '--iperms',
         type=str,
         metavar="IPERMS",
         help="Interactive permissions",
@@ -418,6 +464,7 @@ if __name__ == '__main__':
     )
     parser_mod_namespace.add_argument(
         '-bp',
+        '--bperms',
         type=str,
         metavar="BPERMS",
         help="Batch permissions",
@@ -445,6 +492,7 @@ if __name__ == '__main__':
     )
     parser_del_namespace.add_argument(
         '-n',
+        '--name',
         type=str,
         metavar="NAME",
         help="Name of namespace",
@@ -452,6 +500,7 @@ if __name__ == '__main__':
     )
     parser_del_namespace.add_argument(
         '-f',
+        '--force',
         action='store_true',
         help="Force delete",
     )
@@ -474,6 +523,14 @@ if __name__ == '__main__':
         metavar='REPOSITORY_NAME',
         type=str,
         help='Repository Name to deploy',
+    )
+    parser_new_repo.add_argument(
+        '-pbc',
+        '--pod_block_cap',
+        type=str,
+        metavar="PBC PATH",
+        help="New path template for pod/block/cap tree",
+        default=None
     )
     parser_new_repo.set_defaults(func=new_repo)
 

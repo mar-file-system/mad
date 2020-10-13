@@ -184,6 +184,7 @@
         </data>
 
         <metadata>
+            <gpfs_dev>/dev/tc_marfs</gpfs_dev>
             <!-- All Namespaces -->
             <ns name="testing">
                 <quota>
