@@ -134,14 +134,14 @@ class GPFSInterface(MetadataInterface):
         # TODO might need error checking to make sure MDFS top is ready
         self.create_pod_block_caps()
         # Now we can deploy the whole repo and pass on existing namespaces
-        for ns in self.working_repo.namespaces:
+        for ns in self.working_repo.metadata.namespaces:
             try:
                 self.deploy_namespace(ns)
             except FileExistsError:
                 print("doing nothing")
 
     def deploy_namespace(self, namespace):
-        link_target = self.working_repo.mdal.ns_root + "/" + namespace.name
+        link_target = self.working_repo.metadata.mdal.ns_root + "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"

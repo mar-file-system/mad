@@ -104,11 +104,15 @@ def write_xml(config_path, tree):
 
 def modns(args):
     data = get_tree_root(args.marfs_config)
+    repofound = False
+    nsfound = False
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
+            repofound = True
             md = repo.find("metadata")
             for ns in md.iter("ns"):
                 if ns.attrib["name"] == args.N:
+                    nsfound = True
                     if args.newname:
                         check_ns_exists(repo, args.newname)
                         ns.attrib["name"] = args.newname
@@ -126,6 +130,11 @@ def modns(args):
                         sanity_check_perms(args.bperms)
                         p.find("batch").text = args.bperms
 
+    if not repofound:
+        sys.exit(f"Could not find repo: {args.repo_name}")
+    if not nsfound:
+        sys.exit(f"Could not find namespace: {args.N}")
+
     write_xml(args.marfs_config, data)
 
 
@@ -134,8 +143,10 @@ def addns(args):
     sanity_check_perms(args.bperms)
     sanity_check_perms(args.iperms)
     args.data = convert_to_bytes(args.data)
+    repofound = False
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
+            repofound = True
             check_ns_exists(repo, args.name)
             md = repo.find("metadata")
             ns = etree.SubElement(md, "ns", name=args.name)
@@ -145,6 +156,10 @@ def addns(args):
             perms = etree.SubElement(ns, "perms")
             etree.SubElement(perms, "interactive").text = args.iperms
             etree.SubElement(perms, "batch").text = args.bperms
+
+    if not repofound:
+         sys.exit(f"Could not find repo: {args.repo_name}")
+
 
     write_xml(args.marfs_config, data)
     if not args.nodeploy:
@@ -159,22 +174,30 @@ def delete_namespace(args):
     # Just remove the namespace from the config
     data = get_tree_root(args.marfs_config)
     confirmed = False
+    removed = False
     if args.force:
         confirmed = True
     else:
-        i = input(f"Confirm delete {args.n}?\n(y/n):")
+        i = input(f"Confirm delete {args.name}?\n(y/n):")
         if i.lower() == "y":
             confirmed = True
 
     if confirmed:
         for repo in data.iter("repo"):
+            md = None
             if repo.attrib["name"] == args.repo_name:
                 md = repo.find("metadata")
                 for ns in md.findall("ns"):
                     if ns.attrib["name"] == args.name:
                         md.remove(ns)
+                        removed = True
+    if md is None:
+        sys.exit(f"Could not find repo: {args.repo_name}")
 
+    if removed:
         write_xml(args.marfs_config, data)
+    else:
+        sys.exit(f"Could not find namespace: {args.name}")
 
 
 def new_repo(args):
