@@ -291,10 +291,7 @@ class Hosts(XMLobj):
 
 class MarFSConfig(XMLobj):
     """
-    Produces an object with all the keys of our config xml file turned
-    into attributes for dot notation.
-    Could be useful in interim until final config structs are decided
-    Is harder to work with than static
+    Creates a pythonic interface to the data in a config file
     """
     def __init__(self, config_path=None):
         self.element_tree_root = None

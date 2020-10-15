@@ -502,8 +502,8 @@ if __name__ == '__main__':
 
     # delete namespace
     parser_del_namespace = subparsers.add_parser(
-        'delns',
-        prog="delns",
+        'rmns',
+        prog="rmns",
         help="Delete a namespace",
     )
     parser_del_namespace.add_argument(
