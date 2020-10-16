@@ -1,6 +1,0 @@
-#!/bin/bash
-
-branch=$(git branch | awk '{print $2}')
-ver=$(cat $(dirname $0)/VERSION)
-
-tar cf "mad-${ver}-${branch}-$(date '+%s').tar" $(dirname $0)/*

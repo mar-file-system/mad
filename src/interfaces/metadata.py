@@ -55,7 +55,7 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
-from storage_tools.node import NodeBase
+from src.node import NodeBase
 import sys
 import os
 
@@ -141,7 +141,8 @@ class GPFSInterface(MetadataInterface):
                 print("doing nothing")
 
     def deploy_namespace(self, namespace):
-        link_target = self.working_repo.metadata.mdal.ns_root + "/" + namespace.name
+        link_target = self.working_repo.metadata.mdal.ns_root + \
+                        "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"
@@ -158,10 +159,12 @@ class GPFSInterface(MetadataInterface):
             print("ERROR: FSINFO ALREADY EXISTS")
             raise FileExistsError
 
-        self.create_fileset(namespace.name)
-        self.link_fileset(namespace.name, link_target)
+        fname = self.working_repo + "-" + namespace.name
+        self.create_fileset(fname)
+        self.link_fileset(fname, link_target)
         os.mkdir(md_path)
-        self.create_fileset(namespace.name + "-trash")
-        self.link_fileset(namespace.name + "-trash", trash_target)
+        trash_fname = fname + "-trash"
+        self.create_fileset(trash_fname)
+        self.link_fileset(trash_fname, trash_target)
         fp = open(fsinfo_path, "w")
         fp.close()

@@ -82,6 +82,26 @@
           <batch>RM,WM,RD,WD,UD,TD</batch>
         </perms>
       </ns>
+      <ns name="namespace5000">
+        <quota>
+          <files>-1</files>
+          <data>10737418240</data>
+        </quota>
+        <perms>
+          <interactive>RM,WM,RD,UD,TD</interactive>
+          <batch>RM,WM,RD,WD,UD,TD</batch>
+        </perms>
+      </ns>
+      <ns name="namespace50001">
+        <quota>
+          <files>-1</files>
+          <data>10737418240</data>
+        </quota>
+        <perms>
+          <interactive>RM,WM,RD,UD,TD</interactive>
+          <batch>RM,WM,RD,WD,UD,TD</batch>
+        </perms>
+      </ns>
     </metadata>
   </repo>
   <repo name="testtwo">

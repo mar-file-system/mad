@@ -1,4 +1,4 @@
-from storage_tools.interfaces import storage as si
+from src.interfaces import storage as si
 import sys
 import os
 import pytest

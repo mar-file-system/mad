@@ -55,7 +55,7 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
-from storage_tools.node import NodeBase
+from src.node import NodeBase
 import sys
 import os
 

@@ -57,97 +57,64 @@
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
 import argparse
+import subprocess
 import sys
 import os
 import copy
 from lxml import etree
-from storage_tools.interfaces import storage as sti
-from storage_tools.interfaces import metadata as mdi
+from src.interfaces import storage as sti
+from src.interfaces import metadata as mdi
+from src import tools
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def convert_to_bytes(data_quota):
-    return str(1073741824 * data_quota)
-
-def sanity_check_perms(perms):
-    valid_perms = ["RD", "WD", "RM", "WM", "UD", "TD"]
-    perms = perms.split(",")
-    for p in perms:
-        if p not in valid_perms:
-            raise ValueError
-
-def check_ns_exists(repo, name):
-    for ns in repo.find("metadata").findall("ns"):
-        if ns.attrib["name"] == name:
-            sys.exit("ERROR namespace name exists already")
-
-
-def check_repo_exists(tree, name):
-    for repo in tree.findall("repo"):
-        if repo.attrib["name"] == name:
-            sys.exit("ERROR: repo name exists already")
-
-
-def get_tree_root(config_path):
-    p = etree.XMLParser(remove_blank_text=True)
-    with open(config_path, "r") as fp:
-        data = etree.parse(fp, parser=p)
-
-    return data.getroot()
-
-
-def write_xml(config_path, tree):
-    with open(config_path, "w") as fp:
-        fp.write(etree.tostring(tree, pretty_print=True,
-                                xml_declaration=True, encoding="utf-8").decode("utf-8"))
-
 
 def modns(args):
-    data = get_tree_root(args.marfs_config)
-    repofound = False
-    nsfound = False
+    ct = tools.ConfigTools()
+    data = ct.get_tree(args.marfs_config)
+    ct.check_exists(data, args.repo_name, args.N)
+
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
-            repofound = True
             md = repo.find("metadata")
             for ns in md.iter("ns"):
                 if ns.attrib["name"] == args.N:
-                    nsfound = True
                     if args.newname:
-                        check_ns_exists(repo, args.newname)
                         ns.attrib["name"] = args.newname
                     q = ns.find("quota")
                     p = ns.find("perms")
                     if args.numfiles:
                         q.find("files").text = args.numfiles
                     if args.data:
-                        args.data = convert_to_bytes(args.data)
+                        args.data = ct.quota_bytes(args.data)
                         q.find("data").text = args.data
                     if args.iperms:
-                        sanity_check_perms(args.iperms)
+                        ct.sanity_check_perms(args.iperms)
                         p.find("interactive").text = args.iperms
                     if args.bperms:
-                        sanity_check_perms(args.bperms)
+                        ct.sanity_check_perms(args.bperms)
                         p.find("batch").text = args.bperms
 
-    if not repofound:
-        sys.exit(f"Could not find repo: {args.repo_name}")
-    if not nsfound:
-        sys.exit(f"Could not find namespace: {args.N}")
-
-    write_xml(args.marfs_config, data)
+    ct.write_xml(data, args.marfs_config)
 
 
 def addns(args):
-    data = get_tree_root(args.marfs_config)
-    sanity_check_perms(args.bperms)
-    sanity_check_perms(args.iperms)
-    args.data = convert_to_bytes(args.data)
-    repofound = False
+    ct = tools.ConfigTools()
+    data = ct.get_tree(args.marfs_config)
+    ct.check_exists(data, args.repo_name)
+    try:
+        ct.check_exists(data, args.repo_name, args.name)
+        fail = True
+    except SystemExit:
+        fail = False
+    if fail:
+        sys.exit(f"Namespace {args.name} already exists")
+
+    ct.sanity_check_perms(args.bperms)
+    ct.sanity_check_perms(args.iperms)
+    args.data = ct.quota_bytes(args.data)
     for repo in data.iter("repo"):
         if repo.attrib["name"] == args.repo_name:
-            repofound = True
-            check_ns_exists(repo, args.name)
             md = repo.find("metadata")
             ns = etree.SubElement(md, "ns", name=args.name)
             quota = etree.SubElement(ns, "quota")
@@ -157,11 +124,7 @@ def addns(args):
             etree.SubElement(perms, "interactive").text = args.iperms
             etree.SubElement(perms, "batch").text = args.bperms
 
-    if not repofound:
-         sys.exit(f"Could not find repo: {args.repo_name}")
-
-
-    write_xml(args.marfs_config, data)
+    ct.write_xml(data, args.marfs_config)
     if not args.nodeploy:
         if args.gpfs_device:
             deploy_gpfs(args)
@@ -172,7 +135,9 @@ def addns(args):
 def delete_namespace(args):
     # This function should not perform backend operations
     # Just remove the namespace from the config
-    data = get_tree_root(args.marfs_config)
+    ct = tools.ConfigTools()
+    data = ct.get_tree(args.marfs_config)
+    ct.check_exists(data, args.repo_name, args.name)
     confirmed = False
     removed = False
     if args.force:
@@ -184,30 +149,28 @@ def delete_namespace(args):
 
     if confirmed:
         for repo in data.iter("repo"):
-            md = None
             if repo.attrib["name"] == args.repo_name:
                 md = repo.find("metadata")
-                for ns in md.findall("ns"):
+                for ns in md.iter("ns"):
                     if ns.attrib["name"] == args.name:
                         md.remove(ns)
                         removed = True
-    if md is None:
-        sys.exit(f"Could not find repo: {args.repo_name}")
 
     if removed:
-        write_xml(args.marfs_config, data)
+        ct.write_xml(data, args.marfs_config)
     else:
-        sys.exit(f"Could not find namespace: {args.name}")
+        sys.exit(f"Could not remove namespace: {args.name}")
 
 
 def new_repo(args):
-    data = get_tree_root(args.marfs_config)
-    check_repo_exists(data, args.repo_name)
+    ct = tools.ConfigTools(args)
+    data = ct.get_tree(args.marfs_config)
+    ct.check_exists(data, args.repo_name)
     r = data.find("repo")
     new_r = copy.deepcopy(r)
     new_r.attrib["name"] = args.repo_name
     md = new_r.find("metadata")
-    for ns in md.findall("ns"):
+    for ns in md.iter("ns"):
         md.remove(ns)
     
     if args.pod_block_cap:
@@ -218,7 +181,7 @@ def new_repo(args):
         new_r.find("data").find("DAL").find("dir_template").text = dt_t
         
     data.append(new_r)
-    write_xml(args.marfs_config, data)
+    ct.write_xml(data, args.marfs_config)
 
 
 def single_node_example():
