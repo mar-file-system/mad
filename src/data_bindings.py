@@ -353,4 +353,3 @@ class MarFSConfig(XMLobj):
 
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
-    mcfg.write_config("testout.xml")

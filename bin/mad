@@ -55,18 +55,16 @@
 # LANL contributions is found at https: // github.com/jti-lanl/aws4c.
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
-
-import argparse
-import subprocess
-import sys
 import os
-import copy
-from lxml import etree
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src import tools
 from src.interfaces import storage as sti
 from src.interfaces import metadata as mdi
-from src import tools
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import argparse
+import subprocess
+import copy
+from lxml import etree
 
 
 def modns(args):
@@ -482,12 +480,10 @@ if __name__ == '__main__':
         help='Repository Name to deploy',
     )
     parser_del_namespace.add_argument(
-        '-n',
-        '--name',
+        'name',
         type=str,
         metavar="NAME",
         help="Name of namespace",
-        required=True
     )
     parser_del_namespace.add_argument(
         '-f',

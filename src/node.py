@@ -55,12 +55,11 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
+from src.data_bindings import MarFSConfig
 import socket
 import subprocess
 import sys
 import os
-from src.data_bindings import MarFSConfig
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
