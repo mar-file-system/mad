@@ -125,7 +125,11 @@ def addns(args):
     ct.write_xml(data, args.marfs_config)
     if not args.nodeploy:
         if args.gpfs_device:
-            deploy_gpfs(args)
+            ct.deploy_gpfs_remote(
+                args.marfs_config,
+                args.repo_name,
+                args.gpfs_device
+            )
         else:
             sys.exit("ERROR; namespace added but not deployed. GPFS device not provided")
 
