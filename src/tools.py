@@ -55,15 +55,38 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
+from src.data_bindings import MarFSConfig
 import subprocess
 import sys
+import os
+import shutil
 from lxml import etree
+from multiprocessing import Pool
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class ConfigTools(object):
     """
     Config manipulation tools
     """
+    def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
+        cfg = MarFSConfig(marfs_config)
+        MAD = shutil.which("mad")
+        c = join([
+            f"{MAD} deploy_zfs {marfs_config} {repo_name}",
+            f"--datastore {datastore_name} --jbod {jbod}"
+        ])
+        items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
+        with Pool(processes=6) as pool:
+            pool.map(self.run_remote, items)
+        
+    def deploy_gpfs_remote(self, marfs_config, repo_name, gpfs_device):
+        cfg = MarFSConfig(marfs_config)
+        MAD = shutil.which("mad")
+        c = f"{MAD} deploy_gpfs {marfs_config} {repo_name} {gpfs_device}"
+        hostname = cfg.hosts.metadata_nodes[0].hostname
+        self.run_remote(hostname, c)
+
     def check_exists(self, tree, repo_name, ns_name=None):
         repofound = False
         nsfound = False
@@ -79,7 +102,7 @@ class ConfigTools(object):
             sys.exit(f"Could not find repo: {repo_name}")
 
         if ns_name and not nsfound:
-            sys.exit("Could not find namespace: {ns_name}")
+            sys.exit(f"Could not find namespace: {ns_name}")
 
     def run_remote(self, hostname, cmd_str, get_output=True, timeout=30):
         cmd = f"ssh {hostname} {cmd_str}"

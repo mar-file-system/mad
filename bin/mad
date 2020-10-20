@@ -161,26 +161,40 @@ def delete_namespace(args):
 
 
 def new_repo(args):
-    ct = tools.ConfigTools(args)
+    ct = tools.ConfigTools()
     data = ct.get_tree(args.marfs_config)
     ct.check_exists(data, args.repo_name)
+    if not args.nodeploy and args.datastore_name is None:
+        sys.exit("Must specify datastore to deploy")
     r = data.find("repo")
     new_r = copy.deepcopy(r)
     new_r.attrib["name"] = args.repo_name
-    md = new_r.find("metadata")
-    for ns in md.iter("ns"):
+    for ns in new_r.find("metadata").iter("ns"):
         md.remove(ns)
-    
     if args.pod_block_cap:
         new_r.find("data").find("DAL").find("dir_template").text = args.pod_block_cap
     else:
         dt_t = new_r.find("data").find("DAL").find("dir_template").text
         dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
         new_r.find("data").find("DAL").find("dir_template").text = dt_t
-        
+
     data.append(new_r)
     ct.write_xml(data, args.marfs_config)
+    if not args.nodeploy and args.datastore_name:
+        ct.deploy_zfs_remote(
+            args.marfs_config,
+            args.repo_name,
+            args.datastore_name,
+            args.jbod
+        )
 
+def ls_(args):
+    ct = tools.ConfigTools()
+    data = ct.get_tree(args.marfs_config)
+    for repo in data.iter("repo"):
+        print("REPO:", repo.attrib["name"])
+        for ns in repo.find("metadata").iter("ns"):
+            print(" " * 7, ns.attrib["name"])
 
 def single_node_example():
     config_file = "./config/single_node.xml"
@@ -509,7 +523,15 @@ if __name__ == '__main__':
         'repo_name',
         metavar='REPOSITORY_NAME',
         type=str,
-        help='Repository Name to deploy',
+        help='Repository name to deploy',
+    )
+    parser_new_repo.add_argument(
+        '-d',
+        '--datastore_name',
+        type=str,
+        metavar="",
+        help="Name of datastore to deploy to",
+        default=None
     )
     parser_new_repo.add_argument(
         '-pbc',
@@ -519,7 +541,33 @@ if __name__ == '__main__':
         help="New path template for pod/block/cap tree",
         default=None
     )
+    parser_new_repo.add_argument(
+        '-jbod',
+        '--jbod',
+        type=str,
+        metavar="JBOD",
+        help="Jbod number to deploy to",
+        default="1"
+    )
+    parser_new_repo.add_argument(
+        '--nodeploy',
+        action='store_true',
+        help="Skip deploying the repo",
+    )
     parser_new_repo.set_defaults(func=new_repo)
+
+    parser_ls_namespaces= subparsers.add_parser(
+        'ls',
+        prog="ls",
+        help="List namespaces and repos in a config",
+    )
+    parser_ls_namespaces.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_ls_namespaces.set_defaults(func=ls_)
 
     if len(sys.argv) < 2:
         parser.print_usage()
