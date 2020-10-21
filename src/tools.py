@@ -72,17 +72,21 @@ class ConfigTools(object):
     def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
         cfg = MarFSConfig(marfs_config)
         MAD = shutil.which("mad")
-        c = join([
-            f"{MAD} deploy_zfs {marfs_config} {repo_name}",
-            f"--datastore {datastore_name} --jbod {jbod}"
-        ])
+        if not MAD:
+            MAD = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/bin/mad"
+        c = f"{MAD} deploy_zfs {marfs_config} {repo_name} --datastore {datastore_name} --jbod {jbod}"
+        print(c)
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
-        with Pool(processes=6) as pool:
-            pool.map(self.run_remote, items)
+        for item in items:
+            self.run_remote(item[0], item[1])
+        #with Pool(processes=6) as pool:
+        #    pool.map(self.run_remote, items)
         
     def deploy_gpfs_remote(self, marfs_config, repo_name, gpfs_device):
         cfg = MarFSConfig(marfs_config)
         MAD = shutil.which("mad")
+        if not MAD:
+            MAD = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/bin/mad"
         c = f"{MAD} deploy_gpfs {marfs_config} {repo_name} {gpfs_device}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
@@ -127,6 +131,7 @@ class ConfigTools(object):
                 )
 
         if len(p.stderr):
+            print(p.stdout.decode("utf-8"))
             print(p.stderr.decode("utf-8"))
 
     def quota_bytes(self, data_quota):
@@ -144,7 +149,7 @@ class ConfigTools(object):
         with open(config_path, "r") as fp:
             tree = etree.parse(fp, parser=parser)
 
-        return tree
+        return tree.getroot()
 
     def write_xml(self, tree, config_path):
         with open(config_path, "w") as fp:

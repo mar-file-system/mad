@@ -167,13 +167,20 @@ def delete_namespace(args):
 def new_repo(args):
     ct = tools.ConfigTools()
     data = ct.get_tree(args.marfs_config)
-    ct.check_exists(data, args.repo_name)
+    try:
+        ct.check_exists(data, args.repo_name)
+        fail = True
+    except SystemExit:
+        fail = False
+    if fail:
+        sys.exit(f"Repo {args.repo_name} already exists")
     if not args.nodeploy and args.datastore_name is None:
         sys.exit("Must specify datastore to deploy")
     r = data.find("repo")
     new_r = copy.deepcopy(r)
     new_r.attrib["name"] = args.repo_name
-    for ns in new_r.find("metadata").iter("ns"):
+    md = new_r.find("metadata")
+    for ns in md.iter("ns"):
         md.remove(ns)
     if args.pod_block_cap:
         new_r.find("data").find("DAL").find("dir_template").text = args.pod_block_cap
@@ -266,7 +273,7 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_deploy_zfs.add_argument(
-        '-j'
+        '-j',
         '--jbod',
         type=str,
         metavar="",

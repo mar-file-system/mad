@@ -291,7 +291,7 @@ class ZFSInterface(StorageInterface):
         if there are other datastores it doesn't know what to do
         """
         # Default to "datastore" as the name
-        datastores_data = self.get_datastores()
+        datastores_data = self.get_datastores(datastore_name)
         datastores_data = [item[0] for item in datastores_data]
         datastores = []
         for datastore in datastores_data:

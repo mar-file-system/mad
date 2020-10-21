@@ -158,7 +158,7 @@ class GPFSInterface(MetadataInterface):
             print("ERROR: FSINFO ALREADY EXISTS")
             raise FileExistsError
 
-        fname = self.working_repo + "-" + namespace.name
+        fname = self.working_repo.name + "-" + namespace.name
         self.create_fileset(fname)
         self.link_fileset(fname, link_target)
         os.mkdir(md_path)
