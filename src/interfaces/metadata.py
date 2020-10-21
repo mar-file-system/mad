@@ -135,11 +135,14 @@ class GPFSInterface(MetadataInterface):
         # Now we can deploy the whole repo and pass on existing namespaces
         for ns in self.working_repo.metadata.namespaces:
             try:
-                self.deploy_namespace(ns)
+                self.deploy_namespace(ns.name)
             except FileExistsError:
                 print("doing nothing")
 
-    def deploy_namespace(self, namespace):
+    def deploy_namespace(self, namespace_name):
+        for ns in self.working_repo.metadata.namespaces:
+            if namespace_name == ns.name:
+                namespace = ns
         link_target = self.working_repo.metadata.mdal.ns_root + \
                         "/" + namespace.name
         md_path = link_target + "/mdfs"

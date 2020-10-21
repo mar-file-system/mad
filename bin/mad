@@ -62,7 +62,6 @@ from src import tools
 from src.interfaces import storage as sti
 from src.interfaces import metadata as mdi
 import argparse
-import subprocess
 import copy
 from lxml import etree
 
@@ -223,134 +222,11 @@ def single_node_example():
     # need to link storage caps under metadata caps somehow
 
 
-def deploy_zfs(args):
-    si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
-    si.deploy_repo(args.repo_name, args.datastore_name)
-
-
-def deploy_gpfs(args):
-    mi = mdi.GPFSInterface(
-        args.marfs_config,
-        args.repo_name,
-        args.gpfs_device
-    )
-    mi.deploy_repo(args.repo_name)
-
-
-def setup_zfs(args):
-    si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
-    si.setup_zfs(args.repo_name, args.datastore_name, args.force_zpools)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    # deploy_zfs
-    parser_deploy_zfs = subparsers.add_parser(
-        'deploy_zfs',
-        prog="deploy_zfs",
-        help="Deploy a MarFS storage cluster to ZFS"
-    )
-    parser_deploy_zfs.add_argument(
-        'marfs_config',
-        metavar='MARFSCONFIGRC',
-        type=str,
-        help='Path to MarFS Configuration File'
-    )
-    parser_deploy_zfs.add_argument(
-        'repo_name',
-        metavar='REPOSITORY_NAME',
-        type=str,
-        help='Repository Name to deploy'
-    )
-    parser_deploy_zfs.add_argument(
-        '-d',
-        '--datastore_name',
-        type=str,
-        metavar="",
-        help="Name of datastore to deploy",
-        default="datastore"
-    )
-    parser_deploy_zfs.add_argument(
-        '-j',
-        '--jbod',
-        type=str,
-        metavar="",
-        help="JBOD number",
-        default="1"
-    )
-    parser_deploy_zfs.set_defaults(func=deploy_zfs)
-    # Deploy GPFS
-    parser_deploy_gpfs = subparsers.add_parser(
-        'deploy_gpfs',
-        prog="deploy_gpfs",
-        help="Deploy MarFS to GPFS"
-    )
-    parser_deploy_gpfs.add_argument(
-        'marfs_config',
-        metavar='MARFSCONFIGRC',
-        type=str,
-        help='Path to MarFS Configuration File'
-    )
-    parser_deploy_gpfs.add_argument(
-        'repo_name',
-        metavar='REPOSITORY_NAME',
-        type=str,
-        help='Repository Name to deploy'
-    )
-    parser_deploy_gpfs.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEV',
-        type=str,
-        help='Path to GPFS device'
-    )
-    parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
-
-    # Setup ZFS
-    parser_setup_zfs = subparsers.add_parser(
-        'setup_zfs',
-        prog="setup_zfs",
-        help="Setup ZFS zpools for MarFS"
-    )
-    parser_setup_zfs.add_argument(
-        'marfs_config',
-        metavar='MARFSCONFIGRC',
-        type=str,
-        help='Path to MarFS Configuration File'
-    )
-    parser_setup_zfs.add_argument(
-        'repo_name',
-        metavar='REPOSITORY_NAME',
-        type=str,
-        help='Repository Name to deploy'
-    )
-    parser_setup_zfs.add_argument(
-        '-d',
-        '--datastore_name',
-        type=str,
-        metavar="",
-        help="Name of datastore to deploy",
-        default="datastore"
-    )
-    parser_setup_zfs.add_argument(
-        '-j'
-        '--jbod',
-        type=str,
-        metavar="",
-        help="JBOD number",
-        default="1"
-    )
-    parser_setup_zfs.add_argument(
-        '-f',
-        '--force_zpools',
-        type=bool,
-        metavar="",
-        help="Force zpool creation",
-        default=False
-    )
-    parser_setup_zfs.set_defaults(func=setup_zfs)
-
+    
     # create new namespace
     parser_new_namespace = subparsers.add_parser(
         'addns',
@@ -537,14 +413,6 @@ if __name__ == '__main__':
         help='Repository name to deploy',
     )
     parser_new_repo.add_argument(
-        '-d',
-        '--datastore_name',
-        type=str,
-        metavar="",
-        help="Name of datastore to deploy to",
-        default=None
-    )
-    parser_new_repo.add_argument(
         '-pbc',
         '--pod_block_cap',
         type=str,
@@ -553,17 +421,18 @@ if __name__ == '__main__':
         default=None
     )
     parser_new_repo.add_argument(
+        'datastore_name',
+        type=str,
+        metavar="",
+        help="Name of datastore to deploy to",
+    )
+    parser_new_repo.add_argument(
         '-jbod',
         '--jbod',
         type=str,
         metavar="JBOD",
         help="Jbod number to deploy to",
         default="1"
-    )
-    parser_new_repo.add_argument(
-        '--nodeploy',
-        action='store_true',
-        help="Skip deploying the repo",
     )
     parser_new_repo.set_defaults(func=new_repo)
 
@@ -580,6 +449,7 @@ if __name__ == '__main__':
     )
     parser_ls_namespaces.set_defaults(func=ls_)
 
+    
     if len(sys.argv) < 2:
         parser.print_usage()
         sys.exit(1)

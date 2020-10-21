@@ -69,12 +69,15 @@ class ConfigTools(object):
     """
     Config manipulation tools
     """
-    def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
+    def __init__(self):
+        self.MAD = shutil.which("mad-deploy")
+        if not self.MAD:
+            self.MAD = os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))) + "/bin/mad-deploy"
+    def deploy_repo_remote(self, marfs_config, repo_name, gpfs_device, datastore_name, jbod):
+        # update this
         cfg = MarFSConfig(marfs_config)
-        MAD = shutil.which("mad")
-        if not MAD:
-            MAD = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/bin/mad"
-        c = f"{MAD} deploy_zfs {marfs_config} {repo_name} --datastore {datastore_name} --jbod {jbod}"
+        c = f"{self.MAD} repo {marfs_config} {repo_name} {gpfs_device} {datastore_name} --jbod {jbod}"
         print(c)
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
         for item in items:
@@ -82,12 +85,9 @@ class ConfigTools(object):
         #with Pool(processes=6) as pool:
         #    pool.map(self.run_remote, items)
         
-    def deploy_gpfs_remote(self, marfs_config, repo_name, gpfs_device):
+    def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name, gpfs_device):
         cfg = MarFSConfig(marfs_config)
-        MAD = shutil.which("mad")
-        if not MAD:
-            MAD = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/bin/mad"
-        c = f"{MAD} deploy_gpfs {marfs_config} {repo_name} {gpfs_device}"
+        c = f"{self.MAD} ns {marfs_config} {repo_name} {ns_name} {gpfs_device}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
