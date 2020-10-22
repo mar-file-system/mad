@@ -78,7 +78,6 @@ def deploy_repo(args):
     pass
 
 def deploy_zfs(args):
-    # make this go away
     si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
     si.deploy_repo(args.repo_name, args.datastore_name)
 
@@ -93,11 +92,9 @@ def deploy_ns(args):
 
 
 def deploy_gpfs(args):
-    # This can go away
     mi = mdi.GPFSInterface(
         args.marfs_config,
         args.repo_name,
-        args.gpfs_device
     )
     mi.deploy_repo(args.repo_name)
 
@@ -111,7 +108,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    # deploy_zfs
+    # deploy_repo
     parser_deploy_repo = subparsers.add_parser(
         'repo',
         prog="repo",
@@ -130,12 +127,6 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_deploy_repo.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEV',
-        type=str,
-        help='Path to GPFS device'
-    )
-    parser_deploy_repo.add_argument(
         'datastore_name',
         type=str,
         metavar="",
@@ -151,6 +142,61 @@ if __name__ == '__main__':
         default="1"
     )
     parser_deploy_repo.set_defaults(func=deploy_repo)
+
+    # deploy zfs
+    parser_deploy_zfs = subparsers.add_parser(
+        'zfs',
+        prog="zfs",
+        help="Deploy a MarFS repo to ZFS"
+    )
+    parser_deploy_zfs.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File'
+    )
+    parser_deploy_zfs.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy'
+    )
+    parser_deploy_zfs.add_argument(
+        'datastore_name',
+        type=str,
+        metavar="",
+        help="Name of datastore to deploy",
+        default="datastore"
+    )
+    parser_deploy_zfs.add_argument(
+        '-j',
+        '--jbod',
+        type=str,
+        metavar="",
+        help="JBOD number",
+        default="1"
+    )
+    parser_deploy_zfs.set_defaults(func=deploy_zfs)
+
+    # deploy whole repo for GPFS
+    parser_deploy_gpfs = subparsers.add_parser(
+        'gpfs',
+        prog="gpfs",
+        help="Deploy a MarFS repo to ZFS"
+    )
+    parser_deploy_gpfs.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File'
+    )
+    parser_deploy_gpfs.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy'
+    )
+    parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
     
     # Setup ZFS
     parser_setup_zfs = subparsers.add_parser(

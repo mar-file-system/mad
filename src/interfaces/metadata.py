@@ -99,23 +99,27 @@ class MetadataInterface(NodeBase):
 
 
 class GPFSInterface(MetadataInterface):
-    def __init__(self, marfs_config=None, marfs_repo=None, gpfs_device=None):
-        self.gpfs_dev = gpfs_device
+    def __init__(self, marfs_config=None, marfs_repo=None):
         print(marfs_repo)
         super().__init__(marfs_config, marfs_repo)
 
     def list_all_filesets(self):
-        self.run(f"mmlsfileset {self.gpfs_dev}")
+        self.run(f"mmlsfileset {self.working_repo.metadata.gpfs_dev}")
 
     def list_fileset(self, target):
-        self.run(f"mmlsfileset {self.gpfs_dev} -J {target}")
+        self.run(
+            f"mmlsfileset {self.working_repo.metadata.gpfs_dev} -J {target}")
 
     def create_fileset(self, name):
-        self.run(f"mmcrfileset {self.gpfs_dev} {name}")
+        self.run(f"mmcrfileset {self.working_repo.metadata.gpfs_dev} {name}")
 
     def link_fileset(self, name, target):
         if not os.path.isdir(target):
-            self.run(f"mmlinkfileset {self.gpfs_dev} {name} -J {target}")
+            c = " ".join([
+                f"mmlinkfileset {self.working_repo.metadata.gpfs_dev}",
+                f"{name} -J {target}"
+            ])
+            self.run(c)
 
     def check_mdfs_top(self):
         try:

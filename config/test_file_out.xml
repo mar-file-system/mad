@@ -52,6 +52,7 @@
       </DAL>
     </data>
     <metadata>
+      <gpfs_dev>/dev/device</gpfs_dev>
       <!-- All Namespaces -->
       <!-- Data On Metadata -->
       <direct read="yes" write="no"/>
@@ -133,6 +134,7 @@
       </DAL>
     </data>
     <metadata>
+      <gpfs_dev>/dev/device</gpfs_dev>
       <!-- All Namespaces -->
       <ns name="unit_test_ns">
         <quota>
@@ -193,6 +195,7 @@
       </DAL>
     </data>
     <metadata>
+      <gpfs_dev>/dev/device</gpfs_dev>
       <!-- All Namespaces -->
       <!-- Data On Metadata -->
       <direct read="yes" write="no"/>

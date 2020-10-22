@@ -239,6 +239,7 @@ class Data(XMLobj):
 
 class Metadata(XMLobj):
     def __init__(self, e):
+        self.gpfs_dev = e.find("gpfs_dev").text
         self.namespaces = [
             Namespace(item) for item in e.findall("ns")
         ]

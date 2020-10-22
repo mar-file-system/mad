@@ -61,8 +61,8 @@
         </data>
 
         <metadata>
+            <gpfs_dev>/dev/device</gpfs_dev>
             <!-- All Namespaces -->
-            
             <ns name="unit_test_ns">
                 <quota>
                     <files>0</files>

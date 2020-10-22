@@ -60,6 +60,7 @@ import subprocess
 import sys
 import os
 import shutil
+from multiprocessing import Pool
 from lxml import etree
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -69,23 +70,29 @@ class ConfigTools(object):
     Config manipulation tools
     """
     def __init__(self):
-        self.MAD = shutil.which("mad-deploy")
-        if not self.MAD:
-            self.MAD = os.path.dirname(os.path.dirname(
+        self.DEPLOY = shutil.which("mad-deploy")
+        if not self.DEPLOY:
+            self.DEPLOY = os.path.dirname(os.path.dirname(
                 os.path.abspath(__file__))) + "/bin/mad-deploy"
+
     def deploy_repo_remote(self, marfs_config, repo_name, gpfs_device, datastore_name, jbod):
         # update this
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.MAD} repo {marfs_config} {repo_name} {gpfs_device} {datastore_name} --jbod {jbod}"
-        print(c)
+        c = f"{self.DEPLOY} zfs {marfs_config} {repo_name} {gpfs_device} {datastore_name} --jbod {jbod}"
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
-        for item in items:
-            self.run_remote(item[0], item[1])
+        with Pool(processes=6) as pool:
+            pool.starmap(self.run_remote, items)
 
-
-    def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name, gpfs_device):
+    def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.MAD} ns {marfs_config} {repo_name} {ns_name} {gpfs_device}"
+        c = f"{self.DEPLOY} zfs {marfs_config} {repo_name} {datastore_name} --jbod {jbod}"
+        items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
+        with Pool(processes=6) as pool:
+            pool.starmap(self.run_remote, items)
+
+    def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name):
+        cfg = MarFSConfig(marfs_config)
+        c = f"{self.DEPLOY} ns {marfs_config} {repo_name} {ns_name}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
@@ -116,6 +123,7 @@ class ConfigTools(object):
             sys.exit(f"Could not find namespace: {ns_name}")
 
     def run_remote(self, hostname, cmd_str, get_output=True, timeout=30):
+        
         cmd = f"ssh {hostname} {cmd_str}"
         try:
             p = subprocess.run(

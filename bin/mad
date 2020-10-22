@@ -126,8 +126,7 @@ def addns(args):
     ct.deploy_ns_gpfs_remote(
         args.marfs_config,
         args.repo_name,
-        args.name,
-        args.gpfs_device
+        args.name
     )
 
 
@@ -187,10 +186,9 @@ def new_repo(args):
 
     data.append(new_r)
     ct.write_xml(data, args.marfs_config)
-    ct.deploy_repo_remote(
+    ct.deploy_zfs_remote(
         args.marfs_config,
         args.repo_name,
-        args.gpfs_device,
         args.datastore_name,
         args.jbod
     )
@@ -247,13 +245,6 @@ if __name__ == '__main__':
         type=str,
         metavar="NAME",
         help="Name of namespace",
-    )
-    parser_new_namespace.add_argument(
-        '-gd',
-        '--gpfs_device',
-        type=str,
-        metavar="GPFS_DEVICE",
-        help="Path to GPFS device for new namespace",
     )
     parser_new_namespace.add_argument(
         '-n',
@@ -408,12 +399,6 @@ if __name__ == '__main__':
         metavar='REPOSITORY_NAME',
         type=str,
         help='Repository name to deploy',
-    )
-    parser_new_repo.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEVICE',
-        type=str,
-        help='GPFS device to use',
     )
     parser_new_repo.add_argument(
         'datastore_name',

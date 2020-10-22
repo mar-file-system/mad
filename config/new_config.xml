@@ -109,6 +109,7 @@
         </data>
 
         <metadata>
+            <gpfs_dev>/dev/device</gpfs_dev>
             <!-- All Namespaces -->
             <ns name="ATCC6-0">
                 <quota>
@@ -184,7 +185,7 @@
         </data>
 
         <metadata>
-            <gpfs_dev>/dev/tc_marfs</gpfs_dev>
+            <gpfs_dev>/dev/device</gpfs_dev>
             <!-- All Namespaces -->
             <ns name="testing">
                 <quota>
