@@ -61,7 +61,6 @@ import sys
 import os
 import shutil
 from lxml import etree
-from multiprocessing import Pool
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -82,14 +81,22 @@ class ConfigTools(object):
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
         for item in items:
             self.run_remote(item[0], item[1])
-        #with Pool(processes=6) as pool:
-        #    pool.map(self.run_remote, items)
-        
+
+
     def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name, gpfs_device):
         cfg = MarFSConfig(marfs_config)
         c = f"{self.MAD} ns {marfs_config} {repo_name} {ns_name} {gpfs_device}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
+
+    def fuse_restart(self, marfs_config):
+        # TODO finish this later
+        # Needs more consideration
+        cfg = MarFSConfig(marfs_config)
+        hosts = cfg.hosts.batch_nodes + cfg.hosts.interactive_nodes
+        # get the fta and int nodes
+        # restart the fuse daemon
+        pass
 
     def check_exists(self, tree, repo_name, ns_name=None):
         repofound = False

@@ -93,6 +93,7 @@ def modns(args):
                         p.find("batch").text = args.bperms
 
     ct.write_xml(data, args.marfs_config)
+    # Will need to restart fuse?
 
 
 def addns(args):
@@ -122,15 +123,12 @@ def addns(args):
             etree.SubElement(perms, "batch").text = args.bperms
 
     ct.write_xml(data, args.marfs_config)
-    if not args.nodeploy:
-        if args.gpfs_device:
-            ct.deploy_gpfs_remote(
-                args.marfs_config,
-                args.repo_name,
-                args.gpfs_device
-            )
-        else:
-            sys.exit("ERROR; namespace added but not deployed. GPFS device not provided")
+    ct.deploy_ns_gpfs_remote(
+        args.marfs_config,
+        args.repo_name,
+        args.name,
+        args.gpfs_device
+    )
 
 
 def delete_namespace(args):
@@ -173,8 +171,7 @@ def new_repo(args):
         fail = False
     if fail:
         sys.exit(f"Repo {args.repo_name} already exists")
-    if not args.nodeploy and args.datastore_name is None:
-        sys.exit("Must specify datastore to deploy")
+
     r = data.find("repo")
     new_r = copy.deepcopy(r)
     new_r.attrib["name"] = args.repo_name
@@ -190,13 +187,13 @@ def new_repo(args):
 
     data.append(new_r)
     ct.write_xml(data, args.marfs_config)
-    if not args.nodeploy and args.datastore_name:
-        ct.deploy_zfs_remote(
-            args.marfs_config,
-            args.repo_name,
-            args.datastore_name,
-            args.jbod
-        )
+    ct.deploy_repo_remote(
+        args.marfs_config,
+        args.repo_name,
+        args.gpfs_device,
+        args.datastore_name,
+        args.jbod
+    )
 
 def ls_(args):
     ct = tools.ConfigTools()
@@ -413,12 +410,10 @@ if __name__ == '__main__':
         help='Repository name to deploy',
     )
     parser_new_repo.add_argument(
-        '-pbc',
-        '--pod_block_cap',
+        'gpfs_device',
+        metavar='GPFS_DEVICE',
         type=str,
-        metavar="PBC PATH",
-        help="New path template for pod/block/cap tree",
-        default=None
+        help='GPFS device to use',
     )
     parser_new_repo.add_argument(
         'datastore_name',
@@ -433,6 +428,14 @@ if __name__ == '__main__':
         metavar="JBOD",
         help="Jbod number to deploy to",
         default="1"
+    )
+    parser_new_repo.add_argument(
+        '-pbc',
+        '--pod_block_cap',
+        type=str,
+        metavar="PBC PATH",
+        help="New path template for pod/block/cap tree",
+        default=None
     )
     parser_new_repo.set_defaults(func=new_repo)
 
