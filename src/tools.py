@@ -64,6 +64,14 @@ from multiprocessing import Pool
 from lxml import etree
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+class MadBin(object):
+    def __init__(self):
+        self.bin = os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))) + "/bin"
+        self.DEPLOY = self.bin + "/mad-deploy"
+        self.MAD = self.bin + "/mad"
+        self.MARFS_INIT = self.bin + "/marfs-init"
+        self.FUSE = shutil.which("marfs_fuse")
 
 class ConfigTools(object):
     """
@@ -71,19 +79,27 @@ class ConfigTools(object):
     """
     def __init__(self):
         self.DEPLOY = shutil.which("mad-deploy")
+        # Getting marfs_fuse may be problematic
+        self.FUSE = shutil.which("marfs_fuse")
         if not self.DEPLOY:
             self.DEPLOY = os.path.dirname(os.path.dirname(
                 os.path.abspath(__file__))) + "/bin/mad-deploy"
 
-    def deploy_repo_remote(self, marfs_config, repo_name, gpfs_device, datastore_name, jbod):
-        # update this
+    def deploy_repo_remote(self, marfs_config, repo_name, datastore_name, jbod):
+        marfs_config = os.path.abspath(marfs_config)
+        self.deploy_zfs_remote(
+            marfs_config,
+            repo_name,
+            datastore_name,
+            jbod
+        )
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.DEPLOY} zfs {marfs_config} {repo_name} {gpfs_device} {datastore_name} --jbod {jbod}"
-        items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
-        with Pool(processes=6) as pool:
-            pool.starmap(self.run_remote, items)
+        c = f"{self.DEPLOY} gpfs {marfs_config} {repo_name}"
+        hostname = cfg.hosts.metadata_nodes[0].hostname
+        self.run_remote(hostname, c)
 
     def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
+        marfs_config = os.path.abspath(marfs_config)
         cfg = MarFSConfig(marfs_config)
         c = f"{self.DEPLOY} zfs {marfs_config} {repo_name} {datastore_name} --jbod {jbod}"
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
@@ -91,12 +107,14 @@ class ConfigTools(object):
             pool.starmap(self.run_remote, items)
 
     def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name):
+        marfs_config = os.path.abspath(marfs_config)
         cfg = MarFSConfig(marfs_config)
         c = f"{self.DEPLOY} ns {marfs_config} {repo_name} {ns_name}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
     def fuse_restart(self, marfs_config):
+        marfs_config = os.path.abspath(marfs_config)
         # TODO finish this later
         # Needs more consideration
         cfg = MarFSConfig(marfs_config)
@@ -123,7 +141,6 @@ class ConfigTools(object):
             sys.exit(f"Could not find namespace: {ns_name}")
 
     def run_remote(self, hostname, cmd_str, get_output=True, timeout=30):
-        
         cmd = f"ssh {hostname} {cmd_str}"
         try:
             p = subprocess.run(
