@@ -148,7 +148,7 @@ class GPFSInterface(MetadataInterface):
             if namespace_name == ns.name:
                 namespace = ns
         link_target = self.working_repo.metadata.mdal.ns_root + \
-                        "/" + namespace.name
+            "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"

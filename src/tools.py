@@ -64,28 +64,31 @@ from multiprocessing import Pool
 from lxml import etree
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 class MadBin(object):
     def __init__(self):
         self.bin = os.path.dirname(os.path.dirname(
             os.path.abspath(__file__))) + "/bin"
-        self.DEPLOY = self.bin + "/mad-deploy"
-        self.MAD = self.bin + "/mad"
-        self.MARFS_INIT = self.bin + "/marfs-init"
-        self.FUSE = shutil.which("marfs_fuse")
+        self.deploy = self.bin + "/mad-deploy"
+        self.mad = self.bin + "/mad"
+        self.marfs_init = shutil.which("marfs-init")
+        self.fuse = shutil.which("marfs_fuse")
+
 
 class ConfigTools(object):
     """
     Config manipulation tools
     """
     def __init__(self):
-        self.DEPLOY = shutil.which("mad-deploy")
-        # Getting marfs_fuse may be problematic
-        self.FUSE = shutil.which("marfs_fuse")
-        if not self.DEPLOY:
-            self.DEPLOY = os.path.dirname(os.path.dirname(
-                os.path.abspath(__file__))) + "/bin/mad-deploy"
+        self.bin = MadBin()
 
-    def deploy_repo_remote(self, marfs_config, repo_name, datastore_name, jbod):
+    def deploy_repo_remote(
+        self,
+        marfs_config,
+        repo_name,
+        datastore_name,
+        jbod
+    ):
         marfs_config = os.path.abspath(marfs_config)
         self.deploy_zfs_remote(
             marfs_config,
@@ -94,34 +97,38 @@ class ConfigTools(object):
             jbod
         )
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.DEPLOY} gpfs {marfs_config} {repo_name}"
+        c = f"{self.bin.deploy} gpfs {marfs_config} {repo_name}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
     def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
         marfs_config = os.path.abspath(marfs_config)
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.DEPLOY} zfs {marfs_config} {repo_name} {datastore_name} --jbod {jbod}"
+        c = " ".join([
+            f"{self.bin.deploy} zfs {marfs_config} {repo_name}",
+            f"{datastore_name} --jbod {jbod}"
+        ])
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
-        with Pool(processes=6) as pool:
+        with Pool(processes=12) as pool:
             pool.starmap(self.run_remote, items)
 
     def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name):
         marfs_config = os.path.abspath(marfs_config)
         cfg = MarFSConfig(marfs_config)
-        c = f"{self.DEPLOY} ns {marfs_config} {repo_name} {ns_name}"
+        c = f"{self.bin.deploy} ns {marfs_config} {repo_name} {ns_name}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
     def fuse_restart(self, marfs_config):
         marfs_config = os.path.abspath(marfs_config)
-        # TODO finish this later
-        # Needs more consideration
+        # TODO test this
+        # TODO consider other options
         cfg = MarFSConfig(marfs_config)
         hosts = cfg.hosts.batch_nodes + cfg.hosts.interactive_nodes
-        # get the fta and int nodes
-        # restart the fuse daemon
-        pass
+        c = f"{self.bin.marfs_init} fuse-restart"
+        items = [[host.hostname, c] for host in hosts]
+        with Pool(processes=12) as pool:
+            pool.starmap(self.run_remote, items)
 
     def check_exists(self, tree, repo_name, ns_name=None):
         repofound = False
