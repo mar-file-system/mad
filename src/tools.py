@@ -60,6 +60,7 @@ import subprocess
 import sys
 import os
 import shutil
+import copy
 from multiprocessing import Pool
 from lxml import etree
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -79,61 +80,209 @@ class ConfigTools(object):
     """
     Config manipulation tools
     """
-    def __init__(self):
+    def __init__(self, marfs_config):
         self.bin = MadBin()
+        self.marfs_config = os.path.abspath(marfs_config)
+        self.data = self.get_tree(self.marfs_config)
 
-    def deploy_repo_remote(
+    def new_ns(
         self,
-        marfs_config,
+        repo_name,
+        ns_name,
+        iperms,
+        bperms,
+        data_quota,
+        numfiles,
+        nodeploy=False
+    ):
+        self.check_exists(repo_name)
+        try:
+            self.check_exists(repo_name, ns_name)
+            fail = True
+        except SystemExit:
+            fail = False
+        if fail:
+            sys.exit(f"Namespace {ns_name} already exists")
+
+        self.sanity_check_perms(bperms)
+        self.sanity_check_perms(iperms)
+        data_quota = self.quota_bytes(data_quota)
+        for repo in self.data.iter("repo"):
+            if repo.attrib["name"] == repo_name:
+                md = repo.find("metadata")
+                ns = etree.SubElement(md, "ns", name=ns_name)
+                quota = etree.SubElement(ns, "quota")
+                etree.SubElement(quota, "files").text = numfiles
+                etree.SubElement(quota, "data").text = data_quota
+                perms = etree.SubElement(ns, "perms")
+                etree.SubElement(perms, "interactive").text = iperms
+                etree.SubElement(perms, "batch").text = bperms
+
+        self.write_xml()
+        if not nodeploy:
+            self.deploy_ns_gpfs_remote(
+                repo_name,
+                [ns_name]
+            )
+
+    def update_ns(
+        self,
+        repo_name,
+        ns_name,
+        new_name,
+        iperms,
+        bperms,
+        data_quota,
+        numfiles
+    ):
+        self.check_exists(repo_name, ns_name)
+
+        for repo in self.data.iter("repo"):
+            if repo.attrib["name"] == repo_name:
+                md = repo.find("metadata")
+                for ns in md.iter("ns"):
+                    if ns.attrib["name"] == ns_name:
+                        if new_name:
+                            ns.attrib["name"] = new_name
+                        q = ns.find("quota")
+                        p = ns.find("perms")
+                        if numfiles:
+                            q.find("files").text = numfiles
+                        if data_quota:
+                            data_quota = self.quota_bytes(data_quota)
+                            q.find("data").text = data_quota
+                        if iperms:
+                            self.sanity_check_perms(iperms)
+                            p.find("interactive").text = iperms
+                        if bperms:
+                            self.sanity_check_perms(bperms)
+                            p.find("batch").text = bperms
+
+        self.write_xml()
+        # Will need to restart fuse?
+
+    def delete_namespace(
+        self,
+        repo_name,
+        ns_name,
+        force=False
+    ):
+        self.check_exists(repo_name, ns_name)
+        confirmed = False
+        removed = False
+        if force:
+            confirmed = True
+        else:
+            i = input(f"Confirm delete {ns_name}?\n(y/n):")
+            if i.lower() == "y":
+                confirmed = True
+
+        if confirmed:
+            for repo in self.data.iter("repo"):
+                if repo.attrib["name"] == repo_name:
+                    md = repo.find("metadata")
+                    for ns in md.iter("ns"):
+                        if ns.attrib["name"] == ns_name:
+                            md.remove(ns)
+                            removed = True
+
+        if removed:
+            self.write_xml()
+        else:
+            sys.exit(f"Could not remove namespace: {ns_name}")
+
+    def ls(
+        self
+    ):
+        for repo in self.data.iter("repo"):
+            print("REPO:", repo.attrib["name"])
+            for ns in repo.find("metadata").iter("ns"):
+                print(" " * 7, ns.attrib["name"])
+
+    def new_repo(
+        self,
         repo_name,
         datastore_name,
-        jbod
+        jbod,
+        pod_block_cap
     ):
-        marfs_config = os.path.abspath(marfs_config)
-        self.deploy_zfs_remote(
-            marfs_config,
+        try:
+            self.check_exists(repo_name)
+            fail = True
+        except SystemExit:
+            fail = False
+        if fail:
+            sys.exit(f"Repo {repo_name} already exists")
+
+        r = self.data.find("repo")
+        new_r = copy.deepcopy(r)
+        new_r.attrib["name"] = repo_name
+        md = new_r.find("metadata")
+        for ns in md.iter("ns"):
+            md.remove(ns)
+        if pod_block_cap:
+            new_r.find("data").find("DAL").find(
+                "dir_template").text = pod_block_cap
+        else:
+            dt_t = new_r.find("data").find("DAL").find("dir_template").text
+            dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
+            new_r.find("data").find("DAL").find("dir_template").text = dt_t
+
+        self.data.append(new_r)
+        self.write_xml()
+        self.deploy_repo_remote(
             repo_name,
             datastore_name,
             jbod
         )
-        cfg = MarFSConfig(marfs_config)
-        c = f"{self.bin.deploy} gpfs {marfs_config} {repo_name}"
+
+    def deploy_repo_remote(
+        self,
+        repo_name,
+        datastore_name,
+        jbod
+    ):
+        self.deploy_zfs_remote(
+            repo_name,
+            datastore_name,
+            jbod
+        )
+        cfg = MarFSConfig(self.marfs_config)
+        c = f"{self.bin.deploy} gpfs {self.marfs_config} {repo_name}"
         hostname = cfg.hosts.metadata_nodes[0].hostname
         self.run_remote(hostname, c)
 
-    def deploy_zfs_remote(self, marfs_config, repo_name, datastore_name, jbod):
-        marfs_config = os.path.abspath(marfs_config)
-        cfg = MarFSConfig(marfs_config)
+    def deploy_zfs_remote(self, repo_name, datastore_name, jbod):
+        cfg = MarFSConfig(self.marfs_config)
         c = " ".join([
-            f"{self.bin.deploy} zfs {marfs_config} {repo_name}",
+            f"{self.bin.deploy} zfs {self.marfs_config} {repo_name}",
             f"{datastore_name} --jbod {jbod}"
         ])
         items = [[host.hostname, c] for host in cfg.hosts.storage_nodes]
         with Pool(processes=12) as pool:
             pool.starmap(self.run_remote, items)
 
-    def deploy_ns_gpfs_remote(self, marfs_config, repo_name, ns_name):
-        marfs_config = os.path.abspath(marfs_config)
-        cfg = MarFSConfig(marfs_config)
-        c = f"{self.bin.deploy} ns {marfs_config} {repo_name} {ns_name}"
+    def deploy_ns_gpfs_remote(self, repo_name, ns_names):
+        cfg = MarFSConfig(self.marfs_config)
         hostname = cfg.hosts.metadata_nodes[0].hostname
-        self.run_remote(hostname, c)
+        for ns_name in ns_names:
+            c = f"{self.bin.deploy} ns {self.marfs_config} {repo_name} {ns_name}"
+            self.run_remote(hostname, c)
 
-    def fuse_restart(self, marfs_config):
-        marfs_config = os.path.abspath(marfs_config)
+    def fuse_restart(self):
         # TODO test this
         # TODO consider other options
-        cfg = MarFSConfig(marfs_config)
+        cfg = MarFSConfig(self.marfs_config)
         hosts = cfg.hosts.batch_nodes + cfg.hosts.interactive_nodes
         c = f"{self.bin.marfs_init} fuse-restart"
         items = [[host.hostname, c] for host in hosts]
         with Pool(processes=12) as pool:
             pool.starmap(self.run_remote, items)
 
-    def check_exists(self, tree, repo_name, ns_name=None):
+    def check_exists(self, repo_name, ns_name=None):
         repofound = False
         nsfound = False
-        for repo in tree.iter("repo"):
+        for repo in self.data.iter("repo"):
             if repo.attrib["name"] == repo_name:
                 repofound = True
                 if ns_name:
@@ -190,8 +339,8 @@ class ConfigTools(object):
 
         return tree.getroot()
 
-    def write_xml(self, tree, config_path):
-        with open(config_path, "w") as fp:
-            fp.write(etree.tostring(tree, pretty_print=True,
+    def write_xml(self):
+        with open(self.marfs_config, "w") as fp:
+            fp.write(etree.tostring(self.data, pretty_print=True,
                                     xml_declaration=True,
                                     encoding="utf-8").decode("utf-8"))

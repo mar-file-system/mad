@@ -59,162 +59,84 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src import tools
-from src.interfaces import storage as sti
-from src.interfaces import metadata as mdi
 import argparse
-import copy
-from lxml import etree
-
-
-def modns(args):
-    ct = tools.ConfigTools()
-    data = ct.get_tree(args.marfs_config)
-    ct.check_exists(data, args.repo_name, args.N)
-
-    for repo in data.iter("repo"):
-        if repo.attrib["name"] == args.repo_name:
-            md = repo.find("metadata")
-            for ns in md.iter("ns"):
-                if ns.attrib["name"] == args.N:
-                    if args.newname:
-                        ns.attrib["name"] = args.newname
-                    q = ns.find("quota")
-                    p = ns.find("perms")
-                    if args.numfiles:
-                        q.find("files").text = args.numfiles
-                    if args.data:
-                        args.data = ct.quota_bytes(args.data)
-                        q.find("data").text = args.data
-                    if args.iperms:
-                        ct.sanity_check_perms(args.iperms)
-                        p.find("interactive").text = args.iperms
-                    if args.bperms:
-                        ct.sanity_check_perms(args.bperms)
-                        p.find("batch").text = args.bperms
-
-    ct.write_xml(data, args.marfs_config)
-    # Will need to restart fuse?
 
 
 def addns(args):
-    ct = tools.ConfigTools()
-    data = ct.get_tree(args.marfs_config)
-    ct.check_exists(data, args.repo_name)
-    try:
-        ct.check_exists(data, args.repo_name, args.name)
-        fail = True
-    except SystemExit:
-        fail = False
-    if fail:
-        sys.exit(f"Namespace {args.name} already exists")
-
-    ct.sanity_check_perms(args.bperms)
-    ct.sanity_check_perms(args.iperms)
-    args.data = ct.quota_bytes(args.data)
-    for repo in data.iter("repo"):
-        if repo.attrib["name"] == args.repo_name:
-            md = repo.find("metadata")
-            ns = etree.SubElement(md, "ns", name=args.name)
-            quota = etree.SubElement(ns, "quota")
-            etree.SubElement(quota, "files").text = args.numfiles
-            etree.SubElement(quota, "data").text = args.data
-            perms = etree.SubElement(ns, "perms")
-            etree.SubElement(perms, "interactive").text = args.iperms
-            etree.SubElement(perms, "batch").text = args.bperms
-
-    ct.write_xml(data, args.marfs_config)
-    ct.deploy_ns_gpfs_remote(
-        args.marfs_config,
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.new_ns(
         args.repo_name,
-        args.name
+        args.name,
+        args.iperms,
+        args.bperms,
+        args.data,
+        args.numfiles,
+        args.nodeploy
+    )
+
+
+def modns(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.update_ns(
+        args.repo_name,
+        args.N,
+        args.newname,
+        args.iperms,
+        args.bperms,
+        args.data,
+        args.numfiles,
     )
 
 
 def delete_namespace(args):
     # This function should not perform backend operations
     # Just remove the namespace from the config
-    ct = tools.ConfigTools()
-    data = ct.get_tree(args.marfs_config)
-    ct.check_exists(data, args.repo_name, args.name)
-    confirmed = False
-    removed = False
-    if args.force:
-        confirmed = True
-    else:
-        i = input(f"Confirm delete {args.name}?\n(y/n):")
-        if i.lower() == "y":
-            confirmed = True
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.delete_namespace(
+        args.repo_name,
+        args.name,
+        args.force
+    )
 
-    if confirmed:
-        for repo in data.iter("repo"):
-            if repo.attrib["name"] == args.repo_name:
-                md = repo.find("metadata")
-                for ns in md.iter("ns"):
-                    if ns.attrib["name"] == args.name:
-                        md.remove(ns)
-                        removed = True
 
-    if removed:
-        ct.write_xml(data, args.marfs_config)
-    else:
-        sys.exit(f"Could not remove namespace: {args.name}")
+def make_multiple_ns(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    separators = ["-", ","]
+    new_ns_names = []
+    for sep in separators:
+        if sep in args.range:
+            start, finish = args.range.split("-")
+            start = int(start)
+            finish = int(finish) + 1
+    if not start and not finish:
+        sys.exit("Invalid range")
+    for i in range(start, finish):
+        ns_name = args.name_template + str(i)
+        ct.new_ns(
+            args.repo_name,
+            ns_name,
+            args.iperms,
+            args.bperms,
+            args.data,
+            args.num_files,
+            True
+        )
+        new_ns_names.append(ns_name)
+    ct.deploy_ns_gpfs_remote(args.repo_name, new_ns_names)
 
 
 def new_repo(args):
-    ct = tools.ConfigTools()
-    data = ct.get_tree(args.marfs_config)
-    try:
-        ct.check_exists(data, args.repo_name)
-        fail = True
-    except SystemExit:
-        fail = False
-    if fail:
-        sys.exit(f"Repo {args.repo_name} already exists")
-
-    r = data.find("repo")
-    new_r = copy.deepcopy(r)
-    new_r.attrib["name"] = args.repo_name
-    md = new_r.find("metadata")
-    for ns in md.iter("ns"):
-        md.remove(ns)
-    if args.pod_block_cap:
-        new_r.find("data").find("DAL").find("dir_template").text = args.pod_block_cap
-    else:
-        dt_t = new_r.find("data").find("DAL").find("dir_template").text
-        dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
-        new_r.find("data").find("DAL").find("dir_template").text = dt_t
-
-    data.append(new_r)
-    ct.write_xml(data, args.marfs_config)
-    ct.deploy_zfs_remote(
-        args.marfs_config,
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.new_repo(
         args.repo_name,
         args.datastore_name,
-        args.jbod
+        args.jbos,
+        args.pod_block_cap
     )
 
 def ls_(args):
-    ct = tools.ConfigTools()
-    data = ct.get_tree(args.marfs_config)
-    for repo in data.iter("repo"):
-        print("REPO:", repo.attrib["name"])
-        for ns in repo.find("metadata").iter("ns"):
-            print(" " * 7, ns.attrib["name"])
-
-def single_node_example():
-    config_file = "./config/single_node.xml"
-    repo_name = "single"
-    si = sti.StorageInterface(config_file, repo_name)
-    si._trick_valid_host()
-    si.set_working_repo(repo_name)
-    blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
-    for block in range(blocks):
-        si.block_num = int(block)
-        si.create_pod_block_cap_scatter()
-
-    mi = mdi.MetadataInterface(config_file, repo_name)
-    mi.deploy_repo(repo_name)
-    # need to link storage caps under metadata caps somehow
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.ls()
 
 
 if __name__ == '__main__':
@@ -278,10 +200,11 @@ if __name__ == '__main__':
         help="Batch permissions",
         default="RM,WM,RD,WD,UD,TD"
     )
+    # No deploy is only used internally
     parser_new_namespace.add_argument(
         '--nodeploy',
         action='store_true',
-        help="Skip deploying the namespace",
+        help=argparse.SUPPRESS,
     )
     parser_new_namespace.set_defaults(func=addns)
 
@@ -381,6 +304,78 @@ if __name__ == '__main__':
         help="Force delete",
     )
     parser_del_namespace.set_defaults(func=delete_namespace)
+
+    # create many namespaces
+    parser_many_namespace = subparsers.add_parser(
+        'addns',
+        prog="addns",
+        help="Create a new namespace",
+    )
+    parser_many_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_many_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_many_namespace.add_argument(
+        'name_template',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+    )
+    parser_many_namespace.add_argument(
+        "-r",
+        '--range',
+        type=str,
+        metavar="RANGE",
+        help="range of numbers for new namespaces ex: 1-100 or 1,100",
+        required=True
+    )
+    parser_many_namespace.add_argument(
+        '-n',
+        '--numfiles',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default="-1",
+    )
+    parser_many_namespace.add_argument(
+        '-d',
+        '--data',
+        type=int,
+        metavar="DATA",
+        help="Data limit in GiB",
+        default=10,
+    )
+    parser_many_namespace.add_argument(
+        '-ip',
+        '--iperms',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default="RM,WM,RD,UD,TD",
+    )
+    parser_many_namespace.add_argument(
+        '-bp',
+        '--bperms',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default="RM,WM,RD,WD,UD,TD"
+    )
+    # No deploy is only used internally
+    parser_many_namespace.add_argument(
+        '--nodeploy',
+        action='store_true',
+        help=argparse.SUPPRESS,
+    )
+    parser_new_namespace.set_defaults(func=addns)
 
     # new repo
     parser_new_repo = subparsers.add_parser(

@@ -102,6 +102,22 @@ def setup_zfs(args):
     si.setup_zfs(args.repo_name, args.datastore_name, args.force_zpools)
 
 
+# def single_node_example():
+#     config_file = "./config/single_node.xml"
+#     repo_name = "single"
+#     si = sti.StorageInterface(config_file, repo_name)
+#     si._trick_valid_host()
+#     si.set_working_repo(repo_name)
+#     blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
+#     for block in range(blocks):
+#         si.block_num = int(block)
+#         si.create_pod_block_cap_scatter()
+
+#     mi = mdi.MetadataInterface(config_file, repo_name)
+#     mi.deploy_repo(repo_name)
+#     # need to link storage caps under metadata caps somehow
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
