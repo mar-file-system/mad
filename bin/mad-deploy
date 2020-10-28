@@ -245,12 +245,6 @@ if __name__ == '__main__':
         type=str,
         help='Repository Name to deploy'
     )
-    parser_deploy_ns.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEV',
-        type=str,
-        help='Path to GPFS device'
-    )
     parser_deploy_ns.set_defaults(func=deploy_ns)
 
 

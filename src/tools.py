@@ -79,11 +79,14 @@ class MadBin(object):
 class ConfigTools(object):
     """
     Config manipulation tools
+    Important note: You can't pickle an etree element.
+    So the tree must be created when needed or you can't
+    use multiprocessing.
     """
     def __init__(self, marfs_config):
         self.bin = MadBin()
         self.marfs_config = os.path.abspath(marfs_config)
-        self.data = self.get_tree(self.marfs_config)
+        
 
     def new_ns(
         self,
@@ -95,9 +98,10 @@ class ConfigTools(object):
         numfiles,
         nodeploy=False
     ):
-        self.check_exists(repo_name)
+        data = self.get_tree(self.marfs_config)
+        self.check_exists(data, repo_name)
         try:
-            self.check_exists(repo_name, ns_name)
+            self.check_exists(data, repo_name, ns_name)
             fail = True
         except SystemExit:
             fail = False
@@ -107,7 +111,7 @@ class ConfigTools(object):
         self.sanity_check_perms(bperms)
         self.sanity_check_perms(iperms)
         data_quota = self.quota_bytes(data_quota)
-        for repo in self.data.iter("repo"):
+        for repo in data.iter("repo"):
             if repo.attrib["name"] == repo_name:
                 md = repo.find("metadata")
                 ns = etree.SubElement(md, "ns", name=ns_name)
@@ -118,7 +122,7 @@ class ConfigTools(object):
                 etree.SubElement(perms, "interactive").text = iperms
                 etree.SubElement(perms, "batch").text = bperms
 
-        self.write_xml()
+        self.write_xml(data)
         if not nodeploy:
             self.deploy_ns_gpfs_remote(
                 repo_name,
@@ -135,9 +139,10 @@ class ConfigTools(object):
         data_quota,
         numfiles
     ):
-        self.check_exists(repo_name, ns_name)
+        data = self.get_tree(self.marfs_config)
+        self.check_exists(data, repo_name, ns_name)
 
-        for repo in self.data.iter("repo"):
+        for repo in data.iter("repo"):
             if repo.attrib["name"] == repo_name:
                 md = repo.find("metadata")
                 for ns in md.iter("ns"):
@@ -158,7 +163,7 @@ class ConfigTools(object):
                             self.sanity_check_perms(bperms)
                             p.find("batch").text = bperms
 
-        self.write_xml()
+        self.write_xml(data)
         # Will need to restart fuse?
 
     def delete_namespace(
@@ -167,7 +172,8 @@ class ConfigTools(object):
         ns_name,
         force=False
     ):
-        self.check_exists(repo_name, ns_name)
+        data = self.get_tree(self.marfs_config)
+        self.check_exists(data, repo_name, ns_name)
         confirmed = False
         removed = False
         if force:
@@ -178,7 +184,7 @@ class ConfigTools(object):
                 confirmed = True
 
         if confirmed:
-            for repo in self.data.iter("repo"):
+            for repo in data.iter("repo"):
                 if repo.attrib["name"] == repo_name:
                     md = repo.find("metadata")
                     for ns in md.iter("ns"):
@@ -187,14 +193,15 @@ class ConfigTools(object):
                             removed = True
 
         if removed:
-            self.write_xml()
+            self.write_xml(data)
         else:
             sys.exit(f"Could not remove namespace: {ns_name}")
 
     def ls(
         self
     ):
-        for repo in self.data.iter("repo"):
+        data = self.get_tree(self.marfs_config)
+        for repo in data.iter("repo"):
             print("REPO:", repo.attrib["name"])
             for ns in repo.find("metadata").iter("ns"):
                 print(" " * 7, ns.attrib["name"])
@@ -206,15 +213,16 @@ class ConfigTools(object):
         jbod,
         pod_block_cap
     ):
+        data = self.get_tree(self.marfs_config)
         try:
-            self.check_exists(repo_name)
+            self.check_exists(data, repo_name)
             fail = True
         except SystemExit:
             fail = False
         if fail:
             sys.exit(f"Repo {repo_name} already exists")
 
-        r = self.data.find("repo")
+        r = data.find("repo")
         new_r = copy.deepcopy(r)
         new_r.attrib["name"] = repo_name
         md = new_r.find("metadata")
@@ -228,8 +236,8 @@ class ConfigTools(object):
             dt_t = dt_t.replace(r.attrib["name"], new_r.attrib["name"])
             new_r.find("data").find("DAL").find("dir_template").text = dt_t
 
-        self.data.append(new_r)
-        self.write_xml()
+        data.append(new_r)
+        self.write_xml(data)
         self.deploy_repo_remote(
             repo_name,
             datastore_name,
@@ -265,9 +273,12 @@ class ConfigTools(object):
     def deploy_ns_gpfs_remote(self, repo_name, ns_names):
         cfg = MarFSConfig(self.marfs_config)
         hostname = cfg.hosts.metadata_nodes[0].hostname
+        items = []
         for ns_name in ns_names:
             c = f"{self.bin.deploy} ns {self.marfs_config} {repo_name} {ns_name}"
-            self.run_remote(hostname, c)
+            items.append([hostname, c])
+        with Pool(processes=12) as pool:
+            pool.starmap(self.run_remote, items)
 
     def fuse_restart(self):
         # TODO test this
@@ -279,10 +290,10 @@ class ConfigTools(object):
         with Pool(processes=12) as pool:
             pool.starmap(self.run_remote, items)
 
-    def check_exists(self, repo_name, ns_name=None):
+    def check_exists(self, data, repo_name, ns_name=None):
         repofound = False
         nsfound = False
-        for repo in self.data.iter("repo"):
+        for repo in data.iter("repo"):
             if repo.attrib["name"] == repo_name:
                 repofound = True
                 if ns_name:
@@ -339,8 +350,8 @@ class ConfigTools(object):
 
         return tree.getroot()
 
-    def write_xml(self):
+    def write_xml(self, tree):
         with open(self.marfs_config, "w") as fp:
-            fp.write(etree.tostring(self.data, pretty_print=True,
+            fp.write(etree.tostring(tree, pretty_print=True,
                                     xml_declaration=True,
                                     encoding="utf-8").decode("utf-8"))

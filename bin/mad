@@ -130,7 +130,7 @@ def new_repo(args):
     ct.new_repo(
         args.repo_name,
         args.datastore_name,
-        args.jbos,
+        args.jbod,
         args.pod_block_cap
     )
 
@@ -375,7 +375,7 @@ if __name__ == '__main__':
         action='store_true',
         help=argparse.SUPPRESS,
     )
-    parser_new_namespace.set_defaults(func=addns)
+    parser_many_namespace.set_defaults(func=make_multiple_ns)
 
     # new repo
     parser_new_repo = subparsers.add_parser(
