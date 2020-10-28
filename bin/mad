@@ -118,7 +118,7 @@ def make_multiple_ns(args):
             args.iperms,
             args.bperms,
             args.data,
-            args.num_files,
+            args.numfiles,
             True
         )
         new_ns_names.append(ns_name)
@@ -307,9 +307,9 @@ if __name__ == '__main__':
 
     # create many namespaces
     parser_many_namespace = subparsers.add_parser(
-        'addns',
-        prog="addns",
-        help="Create a new namespace",
+        'manyns',
+        prog="manyns",
+        help="Create many new namespaces",
     )
     parser_many_namespace.add_argument(
         'marfs_config',
