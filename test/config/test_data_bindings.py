@@ -1,4 +1,4 @@
-from config import data_bindings as db
+from src import data_bindings as db
 import sys
 import os
 import pytest

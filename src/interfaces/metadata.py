@@ -55,10 +55,9 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
-from storage_tools.node import NodeBase
+from src.node import NodeBase
 import sys
 import os
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -100,23 +99,27 @@ class MetadataInterface(NodeBase):
 
 
 class GPFSInterface(MetadataInterface):
-    def __init__(self, marfs_config=None, marfs_repo=None, gpfs_device=None):
-        self.gpfs_dev = gpfs_device
+    def __init__(self, marfs_config=None, marfs_repo=None):
         print(marfs_repo)
         super().__init__(marfs_config, marfs_repo)
 
     def list_all_filesets(self):
-        self.run(f"mmlsfileset {self.gpfs_dev}")
+        self.run(f"mmlsfileset {self.working_repo.metadata.gpfs_dev}")
 
     def list_fileset(self, target):
-        self.run(f"mmlsfileset {self.gpfs_dev} -J {target}")
+        self.run(
+            f"mmlsfileset {self.working_repo.metadata.gpfs_dev} -J {target}")
 
     def create_fileset(self, name):
-        self.run(f"mmcrfileset {self.gpfs_dev} {name}")
+        self.run(f"mmcrfileset {self.working_repo.metadata.gpfs_dev} {name}")
 
     def link_fileset(self, name, target):
         if not os.path.isdir(target):
-            self.run(f"mmlinkfileset {self.gpfs_dev} {name} -J {target}")
+            c = " ".join([
+                f"mmlinkfileset {self.working_repo.metadata.gpfs_dev}",
+                f"{name} -J {target}"
+            ])
+            self.run(c)
 
     def check_mdfs_top(self):
         try:
@@ -134,14 +137,18 @@ class GPFSInterface(MetadataInterface):
         # TODO might need error checking to make sure MDFS top is ready
         self.create_pod_block_caps()
         # Now we can deploy the whole repo and pass on existing namespaces
-        for ns in self.working_repo.namespaces:
+        for ns in self.working_repo.metadata.namespaces:
             try:
-                self.deploy_namespace(ns)
+                self.deploy_namespace(ns.name)
             except FileExistsError:
                 print("doing nothing")
 
-    def deploy_namespace(self, namespace):
-        link_target = self.working_repo.mdal.ns_root + "/" + namespace.name
+    def deploy_namespace(self, namespace_name):
+        for ns in self.working_repo.metadata.namespaces:
+            if namespace_name == ns.name:
+                namespace = ns
+        link_target = self.working_repo.metadata.mdal.ns_root + \
+            "/" + namespace.name
         md_path = link_target + "/mdfs"
         trash_target = link_target + "/trash"
         fsinfo_path = link_target + "/fsinfo"
@@ -158,10 +165,12 @@ class GPFSInterface(MetadataInterface):
             print("ERROR: FSINFO ALREADY EXISTS")
             raise FileExistsError
 
-        self.create_fileset(namespace.name)
-        self.link_fileset(namespace.name, link_target)
+        fname = self.working_repo.name + "-" + namespace.name
+        self.create_fileset(fname)
+        self.link_fileset(fname, link_target)
         os.mkdir(md_path)
-        self.create_fileset(namespace.name + "-trash")
-        self.link_fileset(namespace.name + "-trash", trash_target)
+        trash_fname = fname + "-trash"
+        self.create_fileset(trash_fname)
+        self.link_fileset(trash_fname, trash_target)
         fp = open(fsinfo_path, "w")
         fp.close()

@@ -1,4 +1,4 @@
-from storage_tools.interfaces.storage import ZFSInterface
+from src.interfaces.storage import ZFSInterface
 import sys
 import os
 import pytest

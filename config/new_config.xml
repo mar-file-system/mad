@@ -23,35 +23,35 @@
         </storage_node>
         <storage_node hostname="ex-sn005.ex.net">
             <pod>0</pod>
-            <block>0</block>
+            <block>4</block>
         </storage_node>
         <storage_node hostname="ex-sn006.ex.net">
             <pod>0</pod>
-            <block>1</block>
+            <block>5</block>
         </storage_node>
         <storage_node hostname="ex-sn007.ex.net">
             <pod>0</pod>
-            <block>2</block>
+            <block>6</block>
         </storage_node>
         <storage_node hostname="ex-sn008.ex.net">
             <pod>0</pod>
-            <block>3</block>
+            <block>7</block>
         </storage_node>
         <storage_node hostname="ex-sn009.ex.net">
             <pod>0</pod>
-            <block>0</block>
+            <block>8</block>
         </storage_node>
         <storage_node hostname="ex-sn010.ex.net">
             <pod>0</pod>
-            <block>1</block>
+            <block>9</block>
         </storage_node>
         <storage_node hostname="ex-sn011.ex.net">
             <pod>0</pod>
-            <block>2</block>
+            <block>10</block>
         </storage_node>
         <storage_node hostname="ex-sn012.ex.net">
             <pod>0</pod>
-            <block>3</block>
+            <block>11</block>
         </storage_node>
         
         <batch_node hostname="ex-tn001.ex.net" />
@@ -69,7 +69,7 @@
     </hosts>
 
     <!-- REPOS -->
-    <repo name="MC10+2">
+    <repo name="repo10+2">
         <data>
             <storage_top>/zfs/exports</storage_top> 
             <!-- This might belong somewhere else -->
@@ -109,6 +109,7 @@
         </data>
 
         <metadata>
+            <gpfs_dev>/dev/device</gpfs_dev>
             <!-- All Namespaces -->
             <ns name="ATCC6-0">
                 <quota>
@@ -184,6 +185,7 @@
         </data>
 
         <metadata>
+            <gpfs_dev>/dev/device</gpfs_dev>
             <!-- All Namespaces -->
             <ns name="testing">
                 <quota>

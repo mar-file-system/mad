@@ -239,6 +239,7 @@ class Data(XMLobj):
 
 class Metadata(XMLobj):
     def __init__(self, e):
+        self.gpfs_dev = e.find("gpfs_dev").text
         self.namespaces = [
             Namespace(item) for item in e.findall("ns")
         ]
@@ -291,10 +292,7 @@ class Hosts(XMLobj):
 
 class MarFSConfig(XMLobj):
     """
-    Produces an object with all the keys of our config xml file turned
-    into attributes for dot notation.
-    Could be useful in interim until final config structs are decided
-    Is harder to work with than static
+    Creates a pythonic interface to the data in a config file
     """
     def __init__(self, config_path=None):
         self.element_tree_root = None
@@ -356,4 +354,3 @@ class MarFSConfig(XMLobj):
 
 if __name__ == '__main__':
     mcfg = MarFSConfig("new_config.xml")
-    mcfg.write_config("testout.xml")

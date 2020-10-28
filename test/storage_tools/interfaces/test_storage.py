@@ -1,4 +1,4 @@
-from storage_tools.interfaces import storage as si
+from src.interfaces import storage as si
 import sys
 import os
 import pytest
@@ -103,6 +103,7 @@ class TestZFSInterface:
             if "testing_datastore" in ds[0]:
                 found = True
         assert found
+
     @pytest.mark.skip
     def test_mount_datastore(self, marfs_config, working_repo):
         i = self.get_storage_interface(marfs_config, working_repo)

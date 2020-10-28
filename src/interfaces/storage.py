@@ -55,11 +55,9 @@
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
 
-from storage_tools.node import NodeBase
+from src.node import NodeBase
 import sys
 import os
-
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -194,11 +192,11 @@ class ZFSInterface(StorageInterface):
         """
         ZFSTOOL
         """
-
+        # TODO Should create input value disks per pool
         disks = self.get_disks()
         disk_pools = {}
         for i in range(int(self.working_repo.dal.caps)):
-            disk_pools[str(i)] = disks[i*20:(i+1)*20]
+            disk_pools[str(i)] = disks[i*13:(i+1)*13]
         print(disk_pools)
 
         for pool_num in disk_pools.keys():
@@ -293,7 +291,7 @@ class ZFSInterface(StorageInterface):
         if there are other datastores it doesn't know what to do
         """
         # Default to "datastore" as the name
-        datastores_data = self.get_datastores()
+        datastores_data = self.get_datastores(datastore_name)
         datastores_data = [item[0] for item in datastores_data]
         datastores = []
         for datastore in datastores_data:

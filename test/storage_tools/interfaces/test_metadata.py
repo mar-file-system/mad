@@ -1,4 +1,4 @@
-from storage_tools.interfaces import metadata as mi
+from src.interfaces import metadata as mi
 import sys
 import os
 import pytest

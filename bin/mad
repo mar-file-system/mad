@@ -1,0 +1,441 @@
+#!/usr/bin/env python3
+# Copyright(c) 2015, Los Alamos National Security, LLC
+# All rights reserved.
+
+# Copyright 2015.  Los Alamos National Security, LLC. This software was
+# produced under U.S. Government contract DE-AC52-06NA25396 for Los Alamos
+# National Laboratory(LANL), which is operated by Los Alamos National
+# Security, LLC for the U.S. Department of Energy. The U.S. Government has
+# rights to use, reproduce, and distribute this software.  NEITHER THE
+# GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+# OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If
+# software is modified to produce derivative works, such modified software
+# should be clearly marked, so as not to confuse it with the version available
+# from LANL.
+
+# Additionally, redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following conditions
+# are met:
+
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+
+# 3. Neither the name of Los Alamos National Security, LLC, Los Alamos
+# National Laboratory, LANL, the U.S. Government, nor the names of its
+# contributors may be used to endorse or promote products derived from this
+# software without specific prior written permission.
+
+# THIS SOFTWARE IS PROVIDED BY LOS ALAMOS NATIONAL SECURITY, LLC AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT
+# NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LOS ALAMOS NATIONAL
+# SECURITY, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES LOSS OF USE, DATA,
+# OR PROFITS OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# -----
+# NOTE:
+# -----
+# MarFS is released under the BSD license.
+
+# MarFS was reviewed and released by LANL under Los Alamos Computer Code
+# identifier: LA-CC-15-039.
+
+# MarFS uses libaws4c for Amazon S3 object communication. The original version
+# is at https://aws.amazon.com/code/Amazon-S3/2601 and under the LGPL license.
+# LANL added functionality to the original work. The original work plus
+# LANL contributions is found at https: // github.com/jti-lanl/aws4c.
+
+# GNU licenses can be found at http: // www.gnu.org/licenses/.
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src import tools
+import argparse
+
+
+def addns(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.new_ns(
+        args.repo_name,
+        args.name,
+        args.iperms,
+        args.bperms,
+        args.data,
+        args.numfiles,
+        args.nodeploy
+    )
+
+
+def modns(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.update_ns(
+        args.repo_name,
+        args.N,
+        args.newname,
+        args.iperms,
+        args.bperms,
+        args.data,
+        args.numfiles,
+    )
+
+
+def delete_namespace(args):
+    # This function should not perform backend operations
+    # Just remove the namespace from the config
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.delete_namespace(
+        args.repo_name,
+        args.name,
+        args.force
+    )
+
+
+def make_multiple_ns(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    separators = ["-", ","]
+    new_ns_names = []
+    for sep in separators:
+        if sep in args.range:
+            start, finish = args.range.split("-")
+            start = int(start)
+            finish = int(finish) + 1
+    if not start and not finish:
+        sys.exit("Invalid range")
+    for i in range(start, finish):
+        ns_name = args.name_template + str(i)
+        ct.new_ns(
+            args.repo_name,
+            ns_name,
+            args.iperms,
+            args.bperms,
+            args.data,
+            args.numfiles,
+            True
+        )
+        new_ns_names.append(ns_name)
+    ct.deploy_ns_gpfs_remote(args.repo_name, new_ns_names)
+
+
+def new_repo(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.new_repo(
+        args.repo_name,
+        args.datastore_name,
+        args.jbod,
+        args.pod_block_cap
+    )
+
+def ls_(args):
+    ct = tools.ConfigTools(args.marfs_config)
+    ct.ls()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+
+    
+    # create new namespace
+    parser_new_namespace = subparsers.add_parser(
+        'addns',
+        prog="addns",
+        help="Create a new namespace",
+    )
+    parser_new_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_new_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_new_namespace.add_argument(
+        'name',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+    )
+    parser_new_namespace.add_argument(
+        '-n',
+        '--numfiles',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default="-1",
+    )
+    parser_new_namespace.add_argument(
+        '-d',
+        '--data',
+        type=int,
+        metavar="DATA",
+        help="Data limit in GiB",
+        default=10,
+    )
+    parser_new_namespace.add_argument(
+        '-ip',
+        '--iperms',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default="RM,WM,RD,UD,TD",
+    )
+    parser_new_namespace.add_argument(
+        '-bp',
+        '--bperms',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default="RM,WM,RD,WD,UD,TD"
+    )
+    # No deploy is only used internally
+    parser_new_namespace.add_argument(
+        '--nodeploy',
+        action='store_true',
+        help=argparse.SUPPRESS,
+    )
+    parser_new_namespace.set_defaults(func=addns)
+
+    # update namespace
+    parser_mod_namespace = subparsers.add_parser(
+        'modns',
+        prog="modns",
+        help="Modify a namespace",
+    )
+    parser_mod_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_mod_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_mod_namespace.add_argument(
+        'N',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace"
+    )
+    parser_mod_namespace.add_argument(
+        '-nn',
+        '--newname',
+        type=str,
+        metavar="NEWNAME",
+        help="Name of namespace"
+    )
+    parser_mod_namespace.add_argument(
+        '-n',
+        '--numfiles',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-d',
+        '--data',
+        type=int,
+        metavar="DATA",
+        help="Data limit in bytes",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-ip',
+        '--iperms',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default=None
+    )
+    parser_mod_namespace.add_argument(
+        '-bp',
+        '--bperms',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default=None
+    )
+    parser_mod_namespace.set_defaults(func=modns)
+
+    # delete namespace
+    parser_del_namespace = subparsers.add_parser(
+        'rmns',
+        prog="rmns",
+        help="Delete a namespace",
+    )
+    parser_del_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_del_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_del_namespace.add_argument(
+        'name',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+    )
+    parser_del_namespace.add_argument(
+        '-f',
+        '--force',
+        action='store_true',
+        help="Force delete",
+    )
+    parser_del_namespace.set_defaults(func=delete_namespace)
+
+    # create many namespaces
+    parser_many_namespace = subparsers.add_parser(
+        'manyns',
+        prog="manyns",
+        help="Create many new namespaces",
+    )
+    parser_many_namespace.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_many_namespace.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy',
+    )
+    parser_many_namespace.add_argument(
+        'name_template',
+        type=str,
+        metavar="NAME",
+        help="Name of namespace",
+    )
+    parser_many_namespace.add_argument(
+        "-r",
+        '--range',
+        type=str,
+        metavar="RANGE",
+        help="range of numbers for new namespaces ex: 1-100 or 1,100",
+        required=True
+    )
+    parser_many_namespace.add_argument(
+        '-n',
+        '--numfiles',
+        type=str,
+        metavar="FILES",
+        help="Number of files in quota",
+        default="-1",
+    )
+    parser_many_namespace.add_argument(
+        '-d',
+        '--data',
+        type=int,
+        metavar="DATA",
+        help="Data limit in GiB",
+        default=10,
+    )
+    parser_many_namespace.add_argument(
+        '-ip',
+        '--iperms',
+        type=str,
+        metavar="IPERMS",
+        help="Interactive permissions",
+        default="RM,WM,RD,UD,TD",
+    )
+    parser_many_namespace.add_argument(
+        '-bp',
+        '--bperms',
+        type=str,
+        metavar="BPERMS",
+        help="Batch permissions",
+        default="RM,WM,RD,WD,UD,TD"
+    )
+    # No deploy is only used internally
+    parser_many_namespace.add_argument(
+        '--nodeploy',
+        action='store_true',
+        help=argparse.SUPPRESS,
+    )
+    parser_many_namespace.set_defaults(func=make_multiple_ns)
+
+    # new repo
+    parser_new_repo = subparsers.add_parser(
+        'addrepo',
+        prog="addrepo",
+        help="Add a new repository",
+    )
+    parser_new_repo.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_new_repo.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository name to deploy',
+    )
+    parser_new_repo.add_argument(
+        'datastore_name',
+        type=str,
+        metavar="",
+        help="Name of datastore to deploy to",
+    )
+    parser_new_repo.add_argument(
+        '-jbod',
+        '--jbod',
+        type=str,
+        metavar="JBOD",
+        help="Jbod number to deploy to",
+        default="1"
+    )
+    parser_new_repo.add_argument(
+        '-pbc',
+        '--pod_block_cap',
+        type=str,
+        metavar="PBC PATH",
+        help="New path template for pod/block/cap tree",
+        default=None
+    )
+    parser_new_repo.set_defaults(func=new_repo)
+
+    parser_ls_namespaces= subparsers.add_parser(
+        'ls',
+        prog="ls",
+        help="List namespaces and repos in a config",
+    )
+    parser_ls_namespaces.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File',
+    )
+    parser_ls_namespaces.set_defaults(func=ls_)
+
+    
+    if len(sys.argv) < 2:
+        parser.print_usage()
+        sys.exit(1)
+
+    args = parser.parse_args()
+    args.func(args)

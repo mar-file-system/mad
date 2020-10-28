@@ -55,42 +55,44 @@
 # LANL contributions is found at https: // github.com/jti-lanl/aws4c.
 
 # GNU licenses can be found at http: // www.gnu.org/licenses/.
-
-import argparse
-import sys
 import os
-from storage_tools.interfaces import storage as sti
-from storage_tools.interfaces import metadata as mdi
-
+import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.interfaces import storage as sti
+from src.interfaces import metadata as mdi
+import argparse
 
 
-def single_node_example():
-    config_file = "./config/single_node.xml"
-    repo_name = "single"
-    si = sti.StorageInterface(config_file, repo_name)
-    si._trick_valid_host()
-    si.set_working_repo(repo_name)
-    blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
-    for block in range(blocks):
-        si.block_num = int(block)
-        si.create_pod_block_cap_scatter()
-
-    mi = mdi.MetadataInterface(config_file, repo_name)
-    mi.deploy_repo(repo_name)
-    # need to link storage caps under metadata caps somehow
-
+def deploy_repo(args):
+    # TODO needs testing
+    # Deploy a whole repo to ZFS
+    si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
+    si.deploy_repo(args.repo_name, args.datastore_name)
+    # Deploy a whole repo to GPFS
+    mi = mdi.GPFSInterface(
+        args.marfs_config,
+        args.repo_name,
+    )
+    mi.deploy_repo(args.repo_name)
+    pass
 
 def deploy_zfs(args):
     si = sti.ZFSInterface(args.marfs_config, args.repo_name, args.jbod)
     si.deploy_repo(args.repo_name, args.datastore_name)
 
 
+def deploy_ns(args):
+    mi = mdi.GPFSInterface(
+        args.marfs_config,
+        args.repo_name,
+    )
+    mi.deploy_namespace(args.ns_name)
+
+
 def deploy_gpfs(args):
     mi = mdi.GPFSInterface(
         args.marfs_config,
         args.repo_name,
-        args.gpfs_device
     )
     mi.deploy_repo(args.repo_name)
 
@@ -100,15 +102,31 @@ def setup_zfs(args):
     si.setup_zfs(args.repo_name, args.datastore_name, args.force_zpools)
 
 
+# def single_node_example():
+#     config_file = "./config/single_node.xml"
+#     repo_name = "single"
+#     si = sti.StorageInterface(config_file, repo_name)
+#     si._trick_valid_host()
+#     si.set_working_repo(repo_name)
+#     blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
+#     for block in range(blocks):
+#         si.block_num = int(block)
+#         si.create_pod_block_cap_scatter()
+
+#     mi = mdi.MetadataInterface(config_file, repo_name)
+#     mi.deploy_repo(repo_name)
+#     # need to link storage caps under metadata caps somehow
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    # deploy_zfs
+    # deploy zfs
     parser_deploy_zfs = subparsers.add_parser(
-        'deploy_zfs',
-        prog="deploy_zfs",
-        help="Deploy a MarFS storage cluster to ZFS"
+        'zfs',
+        prog="zfs",
+        help="Deploy a MarFS repo to ZFS"
     )
     parser_deploy_zfs.add_argument(
         'marfs_config',
@@ -123,13 +141,14 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_deploy_zfs.add_argument(
-        '--datastore_name',
+        'datastore_name',
         type=str,
         metavar="",
         help="Name of datastore to deploy",
         default="datastore"
     )
     parser_deploy_zfs.add_argument(
+        '-j',
         '--jbod',
         type=str,
         metavar="",
@@ -137,11 +156,12 @@ if __name__ == '__main__':
         default="1"
     )
     parser_deploy_zfs.set_defaults(func=deploy_zfs)
-    # Deploy GPFS
+
+    # deploy whole repo for GPFS
     parser_deploy_gpfs = subparsers.add_parser(
-        'deploy_gpfs',
-        prog="deploy_gpfs",
-        help="Deploy MarFS to GPFS"
+        'gpfs',
+        prog="gpfs",
+        help="Deploy a MarFS repo to ZFS"
     )
     parser_deploy_gpfs.add_argument(
         'marfs_config',
@@ -155,14 +175,8 @@ if __name__ == '__main__':
         type=str,
         help='Repository Name to deploy'
     )
-    parser_deploy_gpfs.add_argument(
-        'gpfs_device',
-        metavar='GPFS_DEV',
-        type=str,
-        help='Path to GPFS device'
-    )
     parser_deploy_gpfs.set_defaults(func=deploy_gpfs)
-
+    
     # Setup ZFS
     parser_setup_zfs = subparsers.add_parser(
         'setup_zfs',
@@ -182,6 +196,7 @@ if __name__ == '__main__':
         help='Repository Name to deploy'
     )
     parser_setup_zfs.add_argument(
+        '-d',
         '--datastore_name',
         type=str,
         metavar="",
@@ -189,6 +204,7 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_setup_zfs.add_argument(
+        '-j'
         '--jbod',
         type=str,
         metavar="",
@@ -196,6 +212,7 @@ if __name__ == '__main__':
         default="1"
     )
     parser_setup_zfs.add_argument(
+        '-f',
         '--force_zpools',
         type=bool,
         metavar="",
@@ -203,6 +220,33 @@ if __name__ == '__main__':
         default=False
     )
     parser_setup_zfs.set_defaults(func=setup_zfs)
+
+    # deploy a namespace
+    parser_deploy_ns = subparsers.add_parser(
+        'ns',
+        prog="ns",
+        help="Deploy MarFS namespace to GPFS"
+    )
+    parser_deploy_ns.add_argument(
+        'marfs_config',
+        metavar='MARFSCONFIGRC',
+        type=str,
+        help='Path to MarFS Configuration File'
+    )
+    parser_deploy_ns.add_argument(
+        'repo_name',
+        metavar='REPOSITORY_NAME',
+        type=str,
+        help='Repository Name to deploy'
+    )
+    parser_deploy_ns.add_argument(
+        'ns_name',
+        metavar='NAMESPACE_NAME',
+        type=str,
+        help='Repository Name to deploy'
+    )
+    parser_deploy_ns.set_defaults(func=deploy_ns)
+
 
     if len(sys.argv) < 2:
         parser.print_usage()
