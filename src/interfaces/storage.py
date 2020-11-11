@@ -195,7 +195,7 @@ class ZFSInterface(StorageInterface):
         # TODO Should create input value disks per pool
         disks = self.get_disks()
         disk_pools = {}
-        for i in range(int(self.working_repo.dal.caps)):
+        for i in range(int(self.working_repo.data.distribution.caps)):
             disk_pools[str(i)] = disks[i*13:(i+1)*13]
         print(disk_pools)
 

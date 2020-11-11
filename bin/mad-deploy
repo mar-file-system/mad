@@ -204,7 +204,7 @@ if __name__ == '__main__':
         default="datastore"
     )
     parser_setup_zfs.add_argument(
-        '-j'
+        '-j',
         '--jbod',
         type=str,
         metavar="",
