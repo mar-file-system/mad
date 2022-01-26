@@ -24,15 +24,6 @@ class TestNodeBase:
         n = NodeBase(marfs_config, working_repo)
         assert n
 
-    def test_valid_host(self, marfs_config, working_repo):
-        n = NodeBase(marfs_config, working_repo)
-        # localhost is a hostname in the single_node.xml file
-        n.fqdn = "localhost"
-        assert n.valid_host()
-        n.fqdn = "testing.test.fail"
-        assert n.hostname == "testing"
-        assert not n.valid_host()
-
     @pytest.mark.xfail
     def test_fail_set_working_repo(self, marfs_config, working_repo):
         n = NodeBase(marfs_config, working_repo)

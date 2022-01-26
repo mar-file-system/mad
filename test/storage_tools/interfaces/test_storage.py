@@ -62,7 +62,6 @@ class TestStorageInterface:
         # This should set the pod and block to
         # the first storage node in the config
         # which using my brain would be pod 0 block 0
-        i._trick_valid_host()
         assert int(i.pod_num) == 0
         assert int(i.block_num) == 0
 

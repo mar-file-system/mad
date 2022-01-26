@@ -76,7 +76,6 @@ class NodeBase(object):
         self.pod_num = None
         self.block_num = None
         self.last_command = None
-        self.valid = self.valid_host()
         self.working_repo = None
         self.set_working_repo(marfs_repo)
 
@@ -88,17 +87,6 @@ class NodeBase(object):
         else:
             return self.fqdn
 
-    def valid_host(self):
-        """
-        Checks to make certain this host is in the config file
-        """
-        found = False
-        hostnames = [self.fqdn, self.hostname]
-        for hostname in hostnames:
-            if hostname in self.config.hosts.all_hostnames:
-                found = True
-
-        return found
 
     def set_working_repo(self, repo_name):
         """

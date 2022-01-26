@@ -66,25 +66,19 @@ class StorageInterface(NodeBase):
         super().__init__(marfs_config, marfs_repo)
         self.load_config_data()
 
-    def _trick_valid_host(self):
-        self.fqdn = self.config.hosts.storage_nodes[0].hostname
-        self.valid = self.valid_host()
-        self.load_config_data()
-
     def load_config_data(self):
         """
         Some data needs to be loaded from the config file specific to a host
         so we get those values from the config and set them here
         """
         hostnames = [self.fqdn, self.hostname]
-        if self.valid:
-            for hostname in hostnames:
-                for host in self.config.hosts.storage_nodes:
-                    if host.hostname == hostname:
-                        self.pod_num = host.pod
-                        self.block_num = host.block
-                if self.pod_num:
-                    break
+        for hostname in hostnames:
+            for host in self.config.hosts.storage_nodes:
+                if host.hostname == hostname:
+                    self.pod_num = host.pod
+                    self.block_num = host.block
+            if self.pod_num:
+                break
 
     def create_pod_block_cap_scatter(self):
         scatter_size = int(self.working_repo.data.distribution.scatters) + 1

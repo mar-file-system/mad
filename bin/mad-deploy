@@ -106,7 +106,6 @@ def setup_zfs(args):
 #     config_file = "./config/single_node.xml"
 #     repo_name = "single"
 #     si = sti.StorageInterface(config_file, repo_name)
-#     si._trick_valid_host()
 #     si.set_working_repo(repo_name)
 #     blocks = int(si.working_repo.dal.n) + int(si.working_repo.dal.e)
 #     for block in range(blocks):
